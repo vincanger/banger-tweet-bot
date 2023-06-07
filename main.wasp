@@ -1,0 +1,168 @@
+app twitterAgent {
+  wasp: {
+    version: "^0.10.6"
+  },
+  title: "twitter-agent",
+  db: { 
+    system: PostgreSQL,
+    seeds: [
+      import { seedScript } from "@server/script.js",
+      import { embedNotes } from "@server/seeding/embedNotes.js"
+    ]
+  },
+  auth: {
+    userEntity: User,
+    onAuthFailedRedirectTo: "/login",
+    methods: {
+      usernameAndPassword: {},
+    }
+  },
+  dependencies: [
+    ("openai", "3.2.1"),
+    ("gpt-3-encoder", "^1.1.4"),
+    ("rettiwt-api", "1.1.8"),
+    ("langchain", "0.0.91"),
+    ("twitter-api-v2", "1.15.0"),
+    ("@pinecone-database/pinecone", "0.1.6"),
+  ],
+}
+
+entity Tweet {=psl
+  id              String         @id
+  author          String
+  content         String
+  drafts          TweetDraft[]
+psl=}
+
+entity TweetDraft {=psl
+  id              Int         @id @default(autoincrement())
+  content         String
+  notes           String?
+  originalTweet   Tweet?      @relation(fields: [originalTweetId], references: [id])
+  originalTweetId String?
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+psl=}
+
+entity GeneratedIdeas {=psl
+  id             Int         @id @default(autoincrement())
+  content        String
+  createdAt      DateTime    @default(now())
+  user           User        @relation(fields: [userId], references: [id])
+  userId         Int
+psl=}
+
+entity VerifyTokens {=psl
+  id              Int         @id @default(autoincrement())
+  codeVerifier    String
+  state           String
+  createdAt       DateTime    @default(now())
+psl=}
+
+entity AccessTokens {=psl
+  id              Int         @id @default(autoincrement())
+  accessToken     String
+  refreshToken    String?
+  expiresIn       Int?
+  updatedAt       DateTime    @default(now())
+  user            User       @relation(fields: [userId], references: [id])
+  userId          Int         @unique
+psl=}
+
+entity User {=psl
+  id              Int         @id @default(autoincrement())
+  username        String      @unique
+  password        String
+  createdAt       DateTime    @default(now())
+  AccessTokens    AccessTokens[]
+  favUsers        String[]
+  tweetDrafts     TweetDraft[]
+  generatedIdeas  GeneratedIdeas[]
+psl=}
+
+// entity Preferences {=psl
+//   id              Int         @id @default(autoincrement())
+//   user            User        @relation(fields: [userId], references: [id])
+//   userId          Int         @unique
+//   favUsers        String[]
+// psl=}
+
+route RootRoute { path: "/", to: MainPage }
+page MainPage {
+  authRequired: true,
+  component: import Main from "@client/MainPage"
+}
+
+route LoginPageRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import Login from "@client/auth/LoginPage"
+}
+
+route TwitterCallbackRoute { path: "/twitter", to: CallbackPage }
+page CallbackPage {
+  component: import TwitterCallback from "@client/auth/TwitterCallback"
+}
+
+route ParentFileRoute { path: "/parentfile/:id", to: ParentFilePage }
+page ParentFilePage {
+  component: import ParentFile from "@client/ParentFilePage"
+}
+
+action generateMemory {
+  fn: import { generateMemory } from "@server/memory.js",
+  entities: [Tweet, AccessTokens]
+}
+
+action test {
+  fn: import { scrapeTest } from "@server/test.js",
+}
+
+api twitterAuthCallback {
+  fn: import { callback } from "@server/twitterAuth.js",
+  entities: [VerifyTokens, AccessTokens, User],
+  httpRoute: (POST, "/twitter/auth/callback")
+}
+
+api twitterAuth {
+  fn: import { twitterAuth } from "@server/twitterAuth.js",
+  entities: [VerifyTokens, User],
+  httpRoute: (GET, "/twitter/auth")
+}
+
+apiNamespace twitterWare {
+  middlewareConfigFn: import { corsOverride } from "@server/twitterAuth.js",
+  path: "/twitter"
+}
+
+job replyDraftsJob{
+  executor: PgBoss,
+  perform: {
+    fn: import generateReplyDrafts from "@server/jobs/generateReplyDrafts.js"
+  },
+  entities: [Tweet, TweetDraft, GeneratedIdeas, User],
+  schedule: {
+    // every 6 hours 
+    cron: "0 */6 * * *" 
+  }
+}
+
+// action generateEmbeddings {
+//   fn: import { generateEmbeddings } from "@server/generateEmbeddings.js",
+//   entities: [Tweet]
+// }
+
+// query getEmbeddedFilenames {
+//   fn: import { getEmbeddedFilenames } from "@server/getEmbeddedFiles.js",
+//   entities:[]
+// }
+
+// query searchEmbeddings {
+//   fn: import { searchEmbeddings } from "@server/searchEmbeddings.js",
+//   entities: [Tweet]
+// }
+
+// query getEmbeddedTextChunk {
+//   fn: import { getEmbeddedTextChunk } from "@server/getEmbeddedFiles.js",
+//   entities: [Tweet]
+// }
