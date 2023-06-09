@@ -50,7 +50,9 @@ export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraf
   }
 
   const drafts = await context.entities.TweetDraft.findMany({
-    // find all drafts that belong to the user and were created in the last 12 hours
+    orderBy: {
+      createdAt: 'desc',
+    },
     where: {
       userId: context.user.id,
       // createdAt: {

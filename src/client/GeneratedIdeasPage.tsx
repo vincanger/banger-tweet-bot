@@ -8,13 +8,43 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
 import { Menu } from '@headlessui/react';
+import { Popover } from '@headlessui/react';
 
 const twitterIcon: any = twitterSvg();
 
 const GeneratedIdeasPage = ({ match, user }: any) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
+  const [editedTweet, setEditedTweet] = useState('');
+
   const userId = match.params.userId;
+
+  // const handleDraftTweetChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  //   setEditedTweet(e.target.value);
+  // };
+
+  const sendTweet = async (id: string) => {
+    const editedTweet = document.getElementById(id)?.getElementsByTagName('textarea')[0].value;
+    console.log('editedTweet >>>>>>>', editedTweet)
+    // TODO: add send tweet logic
+  };
+
+  const handleMouseOver = (id: string) => {
+
+    const el = document.getElementById(id);
+    if (el) {
+      console.log('mouse over');
+      el.style.visibility = 'visible';
+    }
+  };
+  
+  const handleMouseOut = (id: string) => {
+    const el = document.getElementById(id);
+    console.log('mouse over');
+    if (el) {
+      el.style.visibility = 'hidden';
+    }
+  };
 
   const { data: ideas, isLoading } = useQuery(getGeneratedIdeas);
 
@@ -24,11 +54,6 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
     setModalContent(idea);
     setIsModalOpen((x) => !x);
   };
-
-  // useEffect(() => {
-  //   if (!data) return;
-  //   document.getElementById('highlighted')?.scrollIntoView({ behavior: 'smooth' });
-  // }, [data]);
 
   return (
     <div className='min-h-screen bg-neutral-300/70 text-center'>
@@ -44,75 +69,85 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
             <div className='w-2/6 border-t border-neutral-700'></div>
           </div>
         </div>
-        <div className='flex flex-col sm:flex-row justify-center '>
+        <div className='flex flex-col sm:flex-row justify-center'>
           {isTweetDraftsLoading ? (
             'Loading...'
           ) : tweetDrafts?.length ? (
-            <div className='border border-neutral-700 bg-neutral-100/40 rounded-lg p-1 sm:p-4 grid grid-rows-3 gap-4 w-full sm:w-2/4'>
+            <div className='flex flex-col items-center justify-center gap-4 border border-neutral-700 bg-neutral-100/40 rounded-lg p-1 sm:p-4 w-full md:w-4/5 lg:w-3/4 xl:w-3/5 2xl:w-1/2 '>
               {tweetDrafts.length > 0 &&
                 tweetDrafts.map((tweetDraft, index) => (
                   <div
                     key={index}
                     id={String(tweetDraft.id)}
-                    className={`border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-lg w-4/4 text-left`}
+                    className={`border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-lg text-left`}
                   >
-                    <div className='flex flex-row p-2 gap-4 items-start'>
-                      <div className='w-[335px] -mt-3'>
-                        <blockquote className='twitter-tweet'>
-                          <p lang='en' dir='ltr'>
-                            {tweetDraft.originalTweet?.content}
-                          </p>
-                          <a
-                            href={`https://twitter.com/${tweetDraft.originalTweet.author.username}/status/${tweetDraft.originalTweet.tweetId}`}
-                          >
-                            June 8, 2023
-                          </a>
-                        </blockquote>{' '}
-                      </div>
-                      <div
-                        key={index}
-                        id={String(tweetDraft.id)}
-                        className={`flex flex-col text-left border border-neutral-500 bg-white/70 p-2 text-neutral-700 rounded-lg w-[335px]`}
-                      >
-                        <div className={`flex flex-row p-1 justify-between w-full`}>
-                          <div className='flex items-start'>
-                            <div className='border border-black bg-black/80 w-12 h-12 rounded-full' />
-                            <div className='flex flex-col mx-2'>
-                              <div className='text-sm font-bold text-neutral-900'>@{user.username}</div>
-                            </div>
-                          </div>
-                          <div className='flex flex-col'>{twitterIcon}</div>
-                        </div>
-                        <div className='flex flex-col mx-2'>{tweetDraft.content}</div>
-                        <div className='border-t border-neutral-500 bg-white/70 flex flex-row m-2 ' />
-                        <div className='flex flex-row p-1'>
-                          <div className='flex flex-col mx-2'>
-                            <div className='text-sm text-neutral-600'>{tweetDraft.createdAt.toDateString()}</div>
+                    <div className='flex flex-col justify-center sm:flex-row sm:justify-evenly w-full'>
+                      <div className='flex flex-col p-1'>
+                        <h2 className='ml-1 mb-3 mt-1 font-bold'>Original Tweet</h2>
+                        <div className='flex flex-row gap-4 items-start'>
+                          <div className='w-[335px] -mt-3'>
+                            <blockquote className='twitter-tweet'>
+                              <p lang='en' dir='ltr'>
+                                {tweetDraft.originalTweet?.content}
+                              </p>
+                              <a
+                                href={`https://twitter.com/${tweetDraft.originalTweet.author.username}/status/${tweetDraft.originalTweet.tweetId}`}
+                              >
+                                June 8, 2023
+                              </a>
+                            </blockquote>{' '}
                           </div>
                         </div>
                       </div>
+                      <div className='flex flex-col p-1'>
+                        <h2 className='ml-1 mb-3 mt-1 font-bold'>Tweet Draft Based on Original & Notes</h2>
+                        <DraftTweetWrapper
+                          username={user.username}
+                          newTweet={tweetDraft.content}
+                          // handleNewTweetChange={handleDraftTweetChange}
+                          sendTweet={sendTweet}
+                          id={String(tweetDraft.id)}
+                        />
+                      </div>
                     </div>
 
-                    <div className='border-t border-neutral-300 bg-white/70 flex flex-row m-2 ' />
-
-                    <div className='flex flex-row w-4/4 p-2 gap-2 text-left'>
-                      <h2 className='ml-1 text-neutral-700 font-bold'>Based on your note: </h2>
-                      <span className='text-neutral-600 font-slim italic'>{tweetDraft.notes}</span>
-                    </div>
-                    <div className='border-t border-neutral-300 bg-white/70 flex flex-row m-2 ' />
+                    <div className='border-t border-neutral-200 bg-white/70 flex flex-row m-3 ' />
 
                     <div className='flex flex-col w-4/4 p-2 gap-2 items-start text-left'>
-                      <h2 className='ml-1 font-bold'>New Generated Ideas: </h2>
+                      <h2 className='ml-1 font-bold'>Your most similar note: </h2>
+                      {/* <div className='border bg-white/30 rounded-lg p-3 w-full'> */}
+                      <span className='text-neutral-600 font-slim italic'>{tweetDraft.notes}</span>
+                      {/* </div> */}
+                    </div>
+
+                    <div className='border-t border-neutral-200 bg-white/70 flex flex-row m-3 ' />
+                    <div className='flex flex-col w-full p-2 gap-2 items-start text-left'>
+                      <h2 className='ml-1 font-bold'>New Generated Ideas Based on the Original Tweet and Note: </h2>
                       {tweetDraft.originalTweet?.ideas.map((idea, index) => (
-                        <div className='border bg-white/70 rounded-lg p-3'>
+                        <div
+                          onMouseOver={() => handleMouseOver(String(idea.id))}
+                          onMouseOut={() => handleMouseOut(String(idea.id))}
+                          className='border bg-white/30 rounded-lg p-3 w-full'
+                        >
                           {/* <Tippy content='Hello'> */}
                           <li key={index} className='text-neutral-700'>
                             {idea.content}
                           </li>
-                          <div className='flex flex-row justify-end'>
+                          <div
+                            id={String(idea.id)}
+                            className='flex flex-row justify-end gap-0'
+                            style={{ visibility: 'hidden' }}
+                          >
+                            <OptionsPopover />
                             <button
                               onClick={() => handleModalOpen(idea.content)}
-                              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'
+                              className='bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-blue-500 font-bold px-3 py-1 text-sm rounded-l-2xl'
+                            >
+                              Add Idea to Notes
+                            </button>
+                            <button
+                              onClick={() => handleModalOpen(idea.content)}
+                              className='bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-blue-500 font-bold px-3 py-1 text-sm -ml-px rounded-r-2xl'
                             >
                               Generate Tweet From Idea
                             </button>
@@ -186,9 +221,18 @@ function EditModal({
   const [newTweet, setNewTweet] = useState('');
   const [prompt, setPrompt] = useState('');
 
+  const handleNewTweetChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setNewTweet(e.target.value);
+  };
+
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setPrompt(e.target.value);
+  };
+
   const sendTweet = async () => {
     const tweetContent = newTweet;
     console.log('tweetContent', tweetContent);
+    // TODO: add send tweet logic
   };
 
   const handleGenerateTweet = async (e: any) => {
@@ -196,14 +240,6 @@ function EditModal({
     const tweetFromIdea = await generateTweet({ idea, prompt });
     console.log('tweetFromIdea', tweetFromIdea.newTweetIdeas.trim());
     setNewTweet(tweetFromIdea.newTweetIdeas.trim());
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setPrompt(e.target.value);
-  };
-
-  const handleNewTweetChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setNewTweet(e.target.value);
   };
 
   return (
@@ -223,14 +259,17 @@ function EditModal({
                 ></textarea>
 
                 <button onClick={handleGenerateTweet}>Generate New Tweet Draft</button>
-                {/* <button onClick={() => setIsModalOpen(false)}>Cancel</button> */}
-                {newTweet.length > 0 && <button onClick={() => setIsModalOpen(false)}>Send Tweet</button>}
+                <button onClick={() => setIsModalOpen(false)}>Cancel</button>
               </>
             ) : (
               <>
                 <Dialog.Title>New Tweet Draft</Dialog.Title>
                 <Dialog.Description>Based on: {idea}</Dialog.Description>
-                <DraftTweetWrapper username={username} newTweet={newTweet} handleNewTweetChange={handleNewTweetChange} />
+                <DraftTweetWrapper
+                  username={username}
+                  newTweet={newTweet}
+                  handleNewTweetChange={handleNewTweetChange}
+                />
                 <div className='flex flex-row justify-between gap-1 m-1'>
                   <button onClick={() => setIsModalOpen(false)}>Cancel</button>
                   <button onClick={sendTweet}>Send Tweet</button>
@@ -275,16 +314,26 @@ function DraftTweetWrapper({
   username,
   newTweet,
   handleNewTweetChange,
+  id,
+  sendTweet,
 }: {
   username: string;
   newTweet: string;
-  handleNewTweetChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  handleNewTweetChange?: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  id?: string;
+  sendTweet?: (id: string) => void;
 }) {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    if (!textAreaRef.current) return;
+    textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
+  }, [textAreaRef.current]);
+
   return (
     <div
-      className={`flex flex-col text-left border border-neutral-500 bg-white/70 p-2 text-neutral-700 rounded-lg w-[335px]`}
+      key={newTweet}
+      className={`flex flex-col text-left border bg-white/70 p-2 text-neutral-700 rounded-lg w-[335px]`}
     >
       <div className={`flex flex-row p-1 justify-between w-full`}>
         <div className='flex items-start'>
@@ -298,11 +347,11 @@ function DraftTweetWrapper({
       <div className='flex flex-col mx-2'>
         {' '}
         <textarea
-          id='textInput'
+          id={String(id || 0)}
+          className='border border-neutral-300 p-2 rounded-lg w-full text-neutral-700'
           ref={textAreaRef}
           onChange={handleNewTweetChange}
           defaultValue={newTweet}
-          value={newTweet.length > 0 ? newTweet : ''}
           style={{ height: textAreaRef.current?.scrollHeight }}
         />
       </div>
@@ -312,6 +361,30 @@ function DraftTweetWrapper({
           <div className='text-sm text-neutral-600'>{new Date().toDateString()}</div>
         </div>
       </div>
+      {sendTweet && id && (
+        <div className='flex flex-row justify-end gap-1 m-1'>
+          <button onClick={() => sendTweet(id)}>Send Tweet</button>
+        </div>
+      )}
     </div>
+  );
+}
+
+function OptionsPopover() {
+  return (
+    <Popover className='relative'>
+      <Popover.Button>Solutions</Popover.Button>
+
+      <Popover.Panel className='absolute z-10'>
+        <div className='grid grid-cols-2'>
+          <a href='/analytics'>Analytics</a>
+          <a href='/engagement'>Engagement</a>
+          <a href='/security'>Security</a>
+          <a href='/integrations'>Integrations</a>
+        </div>
+
+        <img src='/solutions.jpg' alt='' />
+      </Popover.Panel>
+    </Popover>
   );
 }
