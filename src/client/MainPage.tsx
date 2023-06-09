@@ -4,16 +4,26 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@wasp/queries';
 import generateMemory from '@wasp/actions/generateMemory';
 import api from '@wasp/api';
+import useAuth from '@wasp/auth/useAuth';
+import twitterAuth from '@wasp/actions/twitterAuth'
 
 const URL = 'http://localhost:3001';
 
 const MainPage = () => {
+
   const [query, setQuery] = useState('');
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  const twitterAuth = async () => {
+  const { data: user } = useAuth();
 
-    window.location.href = URL + '/twitter/auth'
+  useEffect(() => {
+    console.log('user', user)
+  }, [user])
+
+  const handleTwitterAuth = async () => {
+    const res = await twitterAuth();
+    console.log('res -- url', res)
+    window.location.href = res
   }
 
   // we keep to keep the query disabled until the user enters a query
@@ -65,7 +75,7 @@ const MainPage = () => {
                 </button>
                 <button
                   className='shadow px-2 py-1 text-neutral-700 bg-yellow-400 rounded whitespace-nowrap'
-                  onClick={twitterAuth}
+                  onClick={handleTwitterAuth}
                 >
                   twitter auth test
                 </button>

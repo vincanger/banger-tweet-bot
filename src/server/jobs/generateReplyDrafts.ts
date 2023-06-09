@@ -10,7 +10,8 @@ type UserDelegate = typeof prismaClient.user;
 type AccessTokens = typeof prismaClient.accessTokens;
 type VerifyTokens = typeof prismaClient.verifyTokens;
 type TweetDraft = typeof prismaClient.tweetDraft;
-type GeneratedIdeas = typeof prismaClient.generatedIdeas;
+type Author = typeof prismaClient.author;
+type GeneratedIdea = typeof prismaClient.generatedIdea;
 type Tweet = typeof prismaClient.tweet;
 type Context = {
   user: User;
@@ -20,7 +21,8 @@ type Context = {
     VerifyTokens: VerifyTokens;
     Tweet: Tweet;
     TweetDraft: TweetDraft;
-    GeneratedIdeas: GeneratedIdeas;
+    GeneratedIdea: GeneratedIdea;
+    Author: Author;
   };
 };
 
@@ -28,7 +30,7 @@ export default async function generateReplyDraftsJob(args: any, context: Context
   // find all users with a favUsers array that is not empty
   const allUsers = await context.entities.User.findMany({});
 
-  const usersWithFavUsers = allUsers.filter((user) => user.favUsers.length > 0);
+  const usersWithFavUsers = allUsers.filter((user: User) => user.favUsers.length > 0);
 
   for (let f = 0; f < usersWithFavUsers.length; f++) {
     const user = usersWithFavUsers[f];
@@ -48,6 +50,19 @@ export default async function generateReplyDraftsJob(args: any, context: Context
         return createdAt > sixHoursAgo;
       });
 
+      const author = await context.entities.Author.upsert({
+        where: {
+          id: userDetails.id,
+        },
+        update: {},
+        create: {
+          id: userDetails.id,
+          username: userDetails.userName,
+          displayName: userDetails.fullName,
+          profilePic: userDetails.profileImage
+        }
+      })
+
       console.log('\nin LOOP 1');
       console.log('\nfavUser', favUser);
       console.log('\nfavUserTweets', favUserTweetTexts);
@@ -58,21 +73,28 @@ export default async function generateReplyDraftsJob(args: any, context: Context
         console.log('\tweet', tweet);
         const draft = await generateDrafts(
           tweet.fullText,
-          'generate a tweet by synthesizing the imformation within the notes',
           user.username
         );
 
         console.log('\ndraft', draft);
 
         const originalTweet = await context.entities.Tweet.upsert({
-          where: { id: tweet.id },
+          where: {
+            tweetId_userId: {
+              tweetId: tweet.id,
+              userId: user.id,
+            }
+          },
           update: {},
           create: {
-            id: tweet.id,
-            author: favUser,
+            tweetId: tweet.id,
+            userId: user.id,
             content: tweet.fullText,
-          },
-        });
+            authorId: author.id
+          }
+        })
+
+        console.log('\n\noriginalTweet [][][][', originalTweet, '\n\n')
 
         let newTweetIdeas = draft.newTweetIdeas.split('\n')
         newTweetIdeas = newTweetIdeas.filter((idea) => idea.length > 0).map((idea) => {
@@ -84,17 +106,18 @@ export default async function generateReplyDraftsJob(args: any, context: Context
           // remove hashtags and the words that follow them
           idea = idea.replace(/#[a-zA-Z0-9]+/g, '');
           idea = idea.trim();
-          if (idea[idea.length - 1] !== '.') {
+          if (idea.length > 1 && idea[idea.length - 1] !== '.') {
             idea += '.';
           }
           return idea;
         })
         for (let j = 0; j < newTweetIdeas.length; j++) {
           const newTweetIdea = newTweetIdeas[j];
-          const newIdea = await context.entities.GeneratedIdeas.create({
+          const newIdea = await context.entities.GeneratedIdea.create({
             data: {
               content: newTweetIdea,
               userId: user.id,
+              originalTweetId: originalTweet.id,
             }
           });
         }

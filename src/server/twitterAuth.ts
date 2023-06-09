@@ -1,4 +1,4 @@
-import { TwitterAuth, TwitterAuthCallback } from '@wasp/apis/types';
+import { TwitterAuth, TwitterAuthCallback } from '@wasp/actions/types';
 import type { VerifyTokens, AccessTokens } from '@wasp/entities';
 import { TwitterApi } from 'twitter-api-v2';
 import HttpError from '@wasp/core/HttpError.js';
@@ -7,6 +7,7 @@ import cors from 'cors';
 import { MiddlewareConfigFn } from '@wasp/middleware';
 import config from '@wasp/config.js';
 import express from 'express';
+import { type } from 'node:os';
 
 const twitterClient = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID!,
@@ -16,32 +17,40 @@ const twitterClient = new TwitterApi({
 const URL = process.env.WASP_WEB_CLIENT_URL || 'http://127.0.0.1:3000';
 const callbackUrl = URL + '/twitter';
 
-export const twitterAuth: TwitterAuth<never, string> = async (req, res, context) => {
+export const twitterAuth: TwitterAuth<never, string> = async (_args, context) => {
+
+  if (!context.user) {
+    throw new HttpError(401, 'User is not authenticated');
+  }
 
   const { url, codeVerifier, state } = twitterClient.generateOAuth2AuthLink(
     callbackUrl,
-    {scope: ['users.read', 'tweet.read', 'tweet.write', 'offline.access']},
-  )
+    { scope: ['users.read', 'tweet.read', 'tweet.write', 'offline.access'] }
+  );
 
   await context.entities.VerifyTokens.create({
     data: {
       state,
       codeVerifier,
-    }
+      userId: context.user.id,
+    },
   });
 
-  console.log('state from generate Auth Link: ', state)
-  // console.log('URL []{{{}}}]', url + '&userId=' + context.user.id)
-  res.redirect(url)
+  console.log('state from generate Auth Link: ', state);
+
+  return url;
 };
 
-export const callback: TwitterAuthCallback<never, {url: string}> = async (req, res, context) => {
-  console.log('][][][] USER ][][][', req.query)
+export const callback: TwitterAuthCallback<{ state: string; code: string }, { url: string }> = async (
+  args,
+  context
+) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authenticated');
   }
 
-  const { state, code, userId } = req.query;
+  const { state, code, } = args;
+  // console.log('][][][] USER ][][][', userId, typeof userId);
   console.log('][][][] STATE from Callback ][][][', state);
   const tokens: VerifyTokens = await context.entities.VerifyTokens.findFirstOrThrow({
     where: {
@@ -57,7 +66,7 @@ export const callback: TwitterAuthCallback<never, {url: string}> = async (req, r
 
   await context.entities.AccessTokens.upsert({
     where: {
-      userId: context.user.id
+      userId: context.user.id,
     },
     update: {
       accessToken,
@@ -71,12 +80,10 @@ export const callback: TwitterAuthCallback<never, {url: string}> = async (req, r
     },
   });
 
-  console.log('MADE IT <><><><><><>')
-  res.status(200).json({ url: process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000'});
+  console.log('MADE IT <><><><><><>');
+  return { url: process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000' };
 };
 
 export const corsOverride: MiddlewareConfigFn = (middlewareConfig) => {
-
-
   return middlewareConfig;
 };

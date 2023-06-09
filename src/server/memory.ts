@@ -47,6 +47,8 @@ export const generateMemory: GenerateMemory<never, void> = async (_args, context
 
   const { client, accessToken, refreshToken } = await twitterClient.refreshOAuth2Token(accessTokens.refreshToken)
 
+
+
   await context.entities.AccessTokens.update({
     where: {
       id: accessTokens.id,

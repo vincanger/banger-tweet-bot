@@ -3,11 +3,15 @@ app twitterAgent {
     version: "^0.10.6"
   },
   title: "twitter-agent",
+  head: [
+    "<script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>"
+  ],
   db: { 
     system: PostgreSQL,
     seeds: [
-      import { seedScript } from "@server/script.js",
-      import { embedNotes } from "@server/seeding/embedNotes.js"
+      import { runChainScript } from "@server/script.js",
+      import { embedNotes } from "@server/seeding/embedNotes.js",
+      import { sendTweetScript } from "@server/script.js",
     ]
   },
   auth: {
@@ -24,39 +28,59 @@ app twitterAgent {
     ("langchain", "0.0.91"),
     ("twitter-api-v2", "1.15.0"),
     ("@pinecone-database/pinecone", "0.1.6"),
+    ("@tippyjs/react", "4.2.6"),
+    ("@headlessui/react", "1.7.15")
   ],
 }
 
 entity Tweet {=psl
-  id              String         @id
-  author          String
+  id              Int           @id @default(autoincrement())
+  tweetId         String        
+  author          Author       @relation(fields: [authorId], references: [id])
+  authorId        String
   content         String
+  user            User         @relation(fields: [userId], references: [id])
+  userId          Int          
   drafts          TweetDraft[]
+  ideas           GeneratedIdea[]
+  @@unique([tweetId, userId])
+psl=}
+
+entity Author {=psl
+  id              String         @id 
+  username        String
+  displayName     String
+  profilePic      String
+  tweets          Tweet[]
 psl=}
 
 entity TweetDraft {=psl
   id              Int         @id @default(autoincrement())
   content         String
-  notes           String?
-  originalTweet   Tweet?      @relation(fields: [originalTweetId], references: [id])
-  originalTweetId String?
+  notes           String
+  originalTweet   Tweet      @relation(fields: [originalTweetId], references: [id])
+  originalTweetId Int
   createdAt       DateTime    @default(now())
   user            User        @relation(fields: [userId], references: [id])
   userId          Int
 psl=}
 
-entity GeneratedIdeas {=psl
-  id             Int         @id @default(autoincrement())
-  content        String
-  createdAt      DateTime    @default(now())
-  user           User        @relation(fields: [userId], references: [id])
-  userId         Int
+entity GeneratedIdea {=psl
+  id              Int         @id @default(autoincrement())
+  content         String
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+  originalTweet   Tweet       @relation(fields: [originalTweetId], references: [id])
+  originalTweetId Int
 psl=}
 
 entity VerifyTokens {=psl
   id              Int         @id @default(autoincrement())
   codeVerifier    String
   state           String
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int         
   createdAt       DateTime    @default(now())
 psl=}
 
@@ -76,17 +100,17 @@ entity User {=psl
   password        String
   createdAt       DateTime    @default(now())
   AccessTokens    AccessTokens[]
+  VerifyTokens    VerifyTokens[]
   favUsers        String[]
+  originalTweets  Tweet[]
   tweetDrafts     TweetDraft[]
-  generatedIdeas  GeneratedIdeas[]
+  generatedIdeas  GeneratedIdea[]
 psl=}
 
-// entity Preferences {=psl
-//   id              Int         @id @default(autoincrement())
-//   user            User        @relation(fields: [userId], references: [id])
-//   userId          Int         @unique
-//   favUsers        String[]
-// psl=}
+// <<< ROUTES ROUTES ROUTES
+// <<<< ROUTES ROUTES ROUTES
+// <<<<< ROUTES ROUTES ROUTES
+// <<<<<< ROUTES ROUTES ROUTES
 
 route RootRoute { path: "/", to: MainPage }
 page MainPage {
@@ -104,43 +128,96 @@ page CallbackPage {
   component: import TwitterCallback from "@client/auth/TwitterCallback"
 }
 
+route GeneratedIdeasRoute { path: "/ideas/:userId", to: GeneratedIdeasPage }
+page GeneratedIdeasPage {
+  authRequired: true,
+  component: import GeneratedIdeas from "@client/GeneratedIdeasPage"
+}
+
 route ParentFileRoute { path: "/parentfile/:id", to: ParentFilePage }
 page ParentFilePage {
   component: import ParentFile from "@client/ParentFilePage"
 }
+
+// ??? QUERIES QUERIES QUERIES
+// ???? QUERIES QUERIES QUERIES
+// ????? QUERIES QUERIES QUERIES
+// ?????? QUERIES QUERIES QUERIES
+
+query getGeneratedIdeas {
+  fn: import { getGeneratedIdeas } from "@server/ideas.js",
+  entities: [GeneratedIdea]
+}
+
+query getTweetDraftsWithIdeas {
+  fn: import { getTweetDraftsWithIdeas } from "@server/tweets.js",
+  entities: [TweetDraft, GeneratedIdea, Tweet]
+}
+
+// !!! ACTIONS ACTIONS ACTIONS
+// !!!! ACTIONS ACTIONS ACTIONS
+// !!!!! ACTIONS ACTIONS ACTIONS
+// !!!!!! ACTIONS ACTIONS ACTIONS
 
 action generateMemory {
   fn: import { generateMemory } from "@server/memory.js",
   entities: [Tweet, AccessTokens]
 }
 
-action test {
-  fn: import { scrapeTest } from "@server/test.js",
+action generateTweetFromPrompt {
+  fn: import { generateTweetFromPrompt } from "@server/tweets.js",
+  entities: [Tweet, TweetDraft, GeneratedIdea, User]
 }
 
-api twitterAuthCallback {
+action embedIdeas {
+  fn: import { embedIdeas } from "@server/ideas.js",
+  entities: [GeneratedIdea]
+}
+
+action sendTweet {
+  fn: import { sendTweet } from "@server/tweets.js",
+  entities: [Tweet, TweetDraft, AccessTokens, GeneratedIdea, User]
+}
+
+action twitterAuthCallback {
   fn: import { callback } from "@server/twitterAuth.js",
   entities: [VerifyTokens, AccessTokens, User],
-  httpRoute: (POST, "/twitter/auth/callback")
+  // httpRoute: (POST, "/twitter/auth/callback")
 }
 
-api twitterAuth {
+action twitterAuth {
   fn: import { twitterAuth } from "@server/twitterAuth.js",
   entities: [VerifyTokens, User],
-  httpRoute: (GET, "/twitter/auth")
+  // httpRoute: (GET, "/twitter/auth")
 }
+
+action generateTweet {
+  fn: import { generateTweet } from "@server/tweets.js",
+  entities: [Tweet, TweetDraft, GeneratedIdea, User]
+}
+
+// @@@ APIs APIs APIs
+// @@@@ APIs APIs APIs
+// @@@@@ APIs APIs APIs
+// @@@@@@ APIs APIs APIs
+
 
 apiNamespace twitterWare {
   middlewareConfigFn: import { corsOverride } from "@server/twitterAuth.js",
   path: "/twitter"
 }
 
+// ^^^ JOBS JOBS JOBS
+// ^^^^ JOBS JOBS JOBS
+// ^^^^^ JOBS JOBS JOBS
+// ^^^^^^ JOBS JOBS JOBS
+
 job replyDraftsJob{
   executor: PgBoss,
   perform: {
     fn: import generateReplyDrafts from "@server/jobs/generateReplyDrafts.js"
   },
-  entities: [Tweet, TweetDraft, GeneratedIdeas, User],
+  entities: [Tweet, TweetDraft, GeneratedIdea, User, Author],
   schedule: {
     // every 6 hours 
     cron: "0 */6 * * *" 

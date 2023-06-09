@@ -1,4 +1,3 @@
-
 import { MultiPromptChain } from 'langchain/chains';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { LLMChain, SequentialChain } from 'langchain/chains';
@@ -17,22 +16,20 @@ export const initPinecone = async () => {
   return pinecone;
 };
 
-export const generateDrafts = async (exampleTweet: string, prompt: string, username: string ) => {
+const embeddings = new OpenAIEmbeddings({
+  openAIApiKey: process.env.OPENAI_API_KEY,
+});
+
+export const generateDrafts = async (exampleTweet: string, username: string) => {
   // remove quotes and curly braces as not to confuse langchain template parser
   exampleTweet = exampleTweet.replace(/"/g, '');
   exampleTweet = exampleTweet.replace(/{/g, '');
   exampleTweet = exampleTweet.replace(/}/g, '');
 
   console.log('exampleTweet [][][][][][][][][][', exampleTweet);
-  const embeddings = new OpenAIEmbeddings({
-    openAIApiKey: process.env.OPENAI_API_KEY,
-  });
 
   const pinecone = await initPinecone();
 
-  // await pinecone.deleteIndex({
-  //   indexName: 'embeds-test',
-  // });
   console.log('list indexes', await pinecone.listIndexes());
 
   if (!(await pinecone.listIndexes()).includes('embeds-test')) {
@@ -51,7 +48,10 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
     namespace: username,
   });
 
-  // < --- multi prompt chain begin
+  //
+  // multi prompt chain begin --- >
+  //
+
   const multiPromptLlm = new ChatOpenAI({
     openAIApiKey: process.env.OPENAI_API_KEY,
     temperature: 0,
@@ -85,14 +85,14 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
   });
 
   const promptTemplates = [styleTemplate, topicTemplate];
-  
-  console.log('before multi prompt chain call')
+
+  console.log('before multi prompt chain call');
   const multiPromptChain = MultiPromptChain.fromLLMAndPrompts(multiPromptLlm, {
     promptNames,
     promptDescriptions,
     promptTemplates,
   });
-  console.log('style promise', exampleTweet)
+  console.log('style promise', exampleTweet);
   const stylePromise = multiPromptChain.call({
     input: exampleTweet,
   });
@@ -102,11 +102,13 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
   });
 
   const [{ text: styleGuide }, { text: topicGuide }] = await Promise.all([stylePromise, topicPromise]);
-  
-  console.log('after multi prompt chain call')
-  // multi prompt chain end --->
 
-  const input = prompt;
+  console.log('after multi prompt chain call');
+
+  //
+  // < --- multi prompt chain end
+  //
+
   const searchRes = await vectorStore.similaritySearch(topicGuide, 2);
   // searchRes[0].pageContent;
   // loop through searchRes and concatenate all pageContent into a single string
@@ -119,13 +121,11 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
     modelName: 'gpt-3.5-turbo',
   });
 
-  const tweetTemplate = `You are an expert controversial idea generator. You will be given a user's notes, a list of additional topics, and a style guide. Your goal is to use this information to brainstorm new ideas. 
+  const tweetTemplate = `You are an expert controversial idea generator. You will be given a user's notes, and a style guide. Your goal is to use this information to brainstorm new ideas. 
 
   Style Guide: {styleGuide}
 
-  Notes: ${notes}
-
-  Additional Topics: {topicGuide}
+  Notes: {topicGuide}. ${notes}
 
   Ideas Brainstorm: 
   -`;
@@ -141,15 +141,17 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
     outputKey: 'newTweetIdeas',
   });
 
-  const unhingedTweetTemplate = `You are an expert controversial tweet generator. You will be given some tweet ideas and your goal is to choose the best one and use it to write a controversial tweet that takes a bold stance.
+  const unhingedTweetTemplate = `You are an expert tweet generator. You will be given some tweet ideas and your goal is to choose the one with the most thought-provoking stance and write a tweet based on it. Structure the tweet using the tone, grammar, and syntax outlined in the style guide.
   
   Tweet Ideas: {newTweetIdeas}
+
+  Style Guide: ${styleGuide}
   
   Controversial Tweet:`;
 
   const unhingedTweetLlm = new ChatOpenAI({
     openAIApiKey: process.env.OPENAI_API_KEY,
-    temperature: 1.2,
+    temperature: 0.9,
     modelName: 'gpt-3.5-turbo',
   });
 
@@ -175,16 +177,142 @@ export const generateDrafts = async (exampleTweet: string, prompt: string, usern
     newTweetIdeas: string;
     unhingedTweet: string;
     notes: string;
-  }
+  };
 
-  const res1 = await overallChain.call({
+  const res1 = (await overallChain.call({
     styleGuide,
     topicGuide,
     exampleTweet,
-  }) as ChainDraftResponse;
+  })) as ChainDraftResponse;
 
   return {
     ...res1,
     notes,
   };
 };
+
+// adsfkja;lsdkfj _)_)_)_)_)_)_)_)_)_)_)
+// adsfkja;lsdkfj _)_)_)_)_)_)_)_)_)_)_)
+// adsfkja;lsdkfj _)_)_)_)_)_)_)_)_)_)_)
+// adsfkja;lsdkfj _)_)_)_)_)_)_)_)_)_)_)
+
+export const generateDraftFromPrompt = async (prompt: string, username: string) => {
+  const pinecone = await initPinecone();
+
+  const pineconeIndex = pinecone.Index('embeds-test');
+
+  const vectorStore = new PineconeStore(embeddings, {
+    pineconeIndex: pineconeIndex,
+    namespace: username,
+  });
+
+  const searchRes = await vectorStore.similaritySearch(prompt, 2);
+  // searchRes[0].pageContent;
+  // loop through searchRes and concatenate all pageContent into a single string
+  const notes = searchRes.map((res) => res.pageContent).join(' ');
+  console.log('\n\nsimilarity search results [][][--0->', notes);
+
+  const tweetLlm = new ChatOpenAI({
+    openAIApiKey: process.env.OPENAI_API_KEY,
+    temperature: 0.7,
+    modelName: 'gpt-3.5-turbo',
+  });
+
+  const tweetTemplate = `You are an expert controversial idea generator. You will be given a user's notes, and a prompt. Your goal is to use this information to brainstorm new ideas. 
+
+  Notes: {notes}
+
+  Prompt: {prompt}
+
+  Ideas Brainstorm: 
+  -`;
+
+  const tweetPromptTemplate = new PromptTemplate({
+    template: tweetTemplate,
+    inputVariables: ['notes', 'prompt'],
+  });
+
+  const tweetChain = new LLMChain({
+    llm: tweetLlm,
+    prompt: tweetPromptTemplate,
+    outputKey: 'newTweetIdeas',
+  });
+
+  const unhingedTweetTemplate = `You are an expert controversial tweet generator. You will be given a prompt and some tweet ideas. Your goal is to write a controversial tweet that takes a bold stance by following the prompt while using the best tweet ideas from the list to guide you.
+  
+  Tweet Ideas: {newTweetIdeas}
+
+  Prompt: ${prompt}
+  
+  Controversial Tweet:`;
+
+  const unhingedTweetLlm = new ChatOpenAI({
+    openAIApiKey: process.env.OPENAI_API_KEY,
+    temperature: 1.2,
+    modelName: 'gpt-3.5-turbo',
+  });
+
+  const unhingedTweetPrompt = new PromptTemplate({
+    template: unhingedTweetTemplate,
+    inputVariables: ['newTweetIdeas'],
+  });
+
+  const unhingedTweetChain = new LLMChain({
+    llm: unhingedTweetLlm,
+    prompt: unhingedTweetPrompt,
+    outputKey: 'unhingedTweet',
+  });
+
+  const overallChain = new SequentialChain({
+    chains: [tweetChain, unhingedTweetChain],
+    inputVariables: ['notes', 'prompt'],
+    outputVariables: ['newTweetIdeas', 'unhingedTweet'],
+    verbose: false,
+  });
+
+  type ChainDraftResponse = {
+    newTweetIdeas: string;
+    unhingedTweet: string;
+  };
+
+  const res1 = (await overallChain.call({
+    notes,
+    prompt,
+  })) as ChainDraftResponse;
+
+  return res1
+};
+
+export const generateTweetFromIdea = async (idea: string, prompt:string, username: string) => {
+  const tweetTemplate = `You are an expert tweet generator. You will be given an idea and a prompt, and your goal is to write a tweet thought-provoking tweet. Structure the tweet using the tone, grammar, and syntax within the tweet idea and prompt.
+  
+  Tweet Idea: {tweetIdea}
+
+  Prompt: {prompt}
+  
+  Controversial Tweet:`;
+
+    const tweetLlm = new ChatOpenAI({
+    openAIApiKey: process.env.OPENAI_API_KEY,
+    temperature: 0.9,
+    modelName: 'gpt-3.5-turbo',
+  });
+
+  const tweetPrompt = new PromptTemplate({
+    template: tweetTemplate,
+    inputVariables: ['tweetIdea', 'prompt'],
+  });
+
+    const tweetChain = new LLMChain({
+    llm: tweetLlm,
+    prompt: tweetPrompt,
+    outputKey: 'newTweetIdeas',
+  });
+
+  const result = await tweetChain.call({
+    tweetIdea: idea,
+    prompt: prompt,
+  });
+  console.log('tweet result', result);
+  return result;
+}

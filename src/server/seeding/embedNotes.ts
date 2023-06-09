@@ -81,33 +81,8 @@ export const embedNotes = async (prismaClient: typeof PrismaClient) => {
     
     docs.push(doc);
   });
-  
-  // const docs = [
-  //   new Document({
-  //     metadata: { type: 'note' },
-  //     pageContent:
-  //       "I'm pro remote work in small-to-medium sized cities. Remote work in a smaller city means lower living costs, better access to nature, close-knit community, and less time spent commuting or getting around",
-  //   }),
-  //   new Document({
-  //     metadata: { type: 'note' },
-  //     pageContent:
-  //       'A good personal moat is being psyched about something you accomplished without caring about the results.',
-  //   }),
-  //   new Document({
-  //     metadata: { type: 'note' },
-  //     pageContent:
-  //       'I’m not sure there’s any 10 step method to creativity. Seems to me it’s more about stepping back than leaning in. Allowing yourself to get distracted by weird ideas, exploring random new things, trying stuff out and being a constant n00b.',
-  //   }),
-  //   new Document({
-  //     metadata: { type: 'tweet' },
-  //     pageContent: 'I am an old man and have known a great many troubles, but most of them never happened.',
-  //   }),
-  // ];
 
   console.log('docs', docs);
-
-  // const array = docs.map((doc) => doc.pageContent);
-  // const embeddingsArray = await embeddings.embedDocuments(array)
 
   await vectorStore.addDocuments(docs);
   console.log('success!')
