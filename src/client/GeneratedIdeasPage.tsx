@@ -15,6 +15,7 @@ const twitterIcon: any = twitterSvg();
 const GeneratedIdeasPage = ({ match, user }: any) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
+  const [exampleTweet, setExampleTweet] = useState('');
   const [editedTweet, setEditedTweet] = useState('');
 
   const userId = match.params.userId;
@@ -25,19 +26,18 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
 
   const sendTweet = async (id: string) => {
     const editedTweet = document.getElementById(id)?.getElementsByTagName('textarea')[0].value;
-    console.log('editedTweet >>>>>>>', editedTweet)
+    console.log('editedTweet >>>>>>>', editedTweet);
     // TODO: add send tweet logic
   };
 
   const handleMouseOver = (id: string) => {
-
     const el = document.getElementById(id);
     if (el) {
       console.log('mouse over');
       el.style.visibility = 'visible';
     }
   };
-  
+
   const handleMouseOut = (id: string) => {
     const el = document.getElementById(id);
     console.log('mouse over');
@@ -50,8 +50,9 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
 
   const { data: tweetDrafts, isLoading: isTweetDraftsLoading } = useQuery(getTweetDraftsWithIdeas);
 
-  const handleModalOpen = (idea: string) => {
+  const handleModalOpen = (idea: string, example?: string) => {
     setModalContent(idea);
+    if (example) setExampleTweet(example);
     setIsModalOpen((x) => !x);
   };
 
@@ -146,7 +147,7 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
                               Add Idea to Notes
                             </button>
                             <button
-                              onClick={() => handleModalOpen(idea.content)}
+                              onClick={() => handleModalOpen(idea.content, tweetDraft.originalTweet.content)}
                               className='bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-blue-500 font-bold px-3 py-1 text-sm -ml-px rounded-r-2xl'
                             >
                               Generate Tweet From Idea
@@ -169,6 +170,7 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
         username={user.username}
+        exampleTweet={exampleTweet}
       />
     </div>
   );
@@ -212,14 +214,20 @@ function EditModal({
   isModalOpen,
   setIsModalOpen,
   username,
+  exampleTweet,
+  setExampleTweet,
 }: {
   idea: string;
   isModalOpen: boolean;
-  setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   username: string;
+  setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  exampleTweet?: string;
+  setExampleTweet?: React.Dispatch<React.SetStateAction<string>>;
 }) {
   const [newTweet, setNewTweet] = useState('');
   const [prompt, setPrompt] = useState('');
+  const [isUserTweetStyle, setIsUserTweetStyle] = useState(false);
+  const [userTweetStyle, setUserTweetStyle] = useState('');
 
   const handleNewTweetChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setNewTweet(e.target.value);
@@ -237,9 +245,31 @@ function EditModal({
 
   const handleGenerateTweet = async (e: any) => {
     e.preventDefault();
-    const tweetFromIdea = await generateTweet({ idea, prompt });
-    console.log('tweetFromIdea', tweetFromIdea.newTweetIdeas.trim());
-    setNewTweet(tweetFromIdea.newTweetIdeas.trim());
+    console.log('exampleTweet', exampleTweet);
+    if (!exampleTweet || exampleTweet.length == 0) return;
+    let tweetFromIdea; 
+    if(isUserTweetStyle && userTweetStyle.length > 0) {
+      tweetFromIdea = await generateTweet({ idea, prompt, exampleTweet, proposedStyle: userTweetStyle });
+    } else {
+      tweetFromIdea = await generateTweet({ idea, prompt, exampleTweet });
+    }
+    
+    setNewTweet(tweetFromIdea.newTweet.trim());
+  };
+
+  const handleDiscardTweet = async (e: any) => {
+    e.preventDefault();
+    setNewTweet('');
+    setIsModalOpen(false);
+    if (setExampleTweet) setExampleTweet('');
+  };
+
+  const handleCheckboxChange = (e: any) => {
+    if (e.target.checked) {
+      setIsUserTweetStyle(true);
+    } else {
+      setIsUserTweetStyle(false);
+    }
   };
 
   return (
@@ -252,11 +282,19 @@ function EditModal({
               <>
                 <Dialog.Title>Idea:</Dialog.Title>
                 <Dialog.Description>{idea}</Dialog.Description>
-                <textarea
-                  id='textInput'
-                  onChange={handleChange}
-                  // value={newTweet.length > 0 ? newTweet : ''}
-                ></textarea>
+                <textarea id='textInput' onChange={handleChange}></textarea>
+
+                <input
+                  type='checkbox'
+                  id='propseTweetStyle'
+                  onChange={handleCheckboxChange}
+                  defaultChecked={isUserTweetStyle}
+                />
+                <label htmlFor='propseTweetStyle'>Propose Tweet Style</label>
+
+                {isUserTweetStyle && (
+                  <textarea id='userTweetStyle' onChange={(e) => setUserTweetStyle(e.target.value)} />
+                )}
 
                 <button onClick={handleGenerateTweet}>Generate New Tweet Draft</button>
                 <button onClick={() => setIsModalOpen(false)}>Cancel</button>
@@ -271,7 +309,7 @@ function EditModal({
                   handleNewTweetChange={handleNewTweetChange}
                 />
                 <div className='flex flex-row justify-between gap-1 m-1'>
-                  <button onClick={() => setIsModalOpen(false)}>Cancel</button>
+                  <button onClick={handleDiscardTweet}>Discard Tweet</button>
                   <button onClick={sendTweet}>Send Tweet</button>
                 </div>
               </>

@@ -280,39 +280,84 @@ export const generateDraftFromPrompt = async (prompt: string, username: string) 
     prompt,
   })) as ChainDraftResponse;
 
-  return res1
+  return res1;
 };
 
-export const generateTweetFromIdea = async (idea: string, prompt:string, username: string) => {
-  const tweetTemplate = `You are an expert tweet generator. You will be given an idea and a prompt, and your goal is to write a tweet thought-provoking tweet. Structure the tweet using the tone, grammar, and syntax within the tweet idea and prompt.
-  
-  Tweet Idea: {tweetIdea}
-
-  Prompt: {prompt}
-  
-  Controversial Tweet:`;
-
-    const tweetLlm = new ChatOpenAI({
+export const generateTweetFromIdea = async ( {idea, prompt, exampleTweet, proposedStyle}: {idea: string, prompt: string, exampleTweet?: string, proposedStyle?: string} ) => {
+  console.log('generateTweetFromIdea', idea, prompt, exampleTweet);
+  const stlyeLlm = new ChatOpenAI({
     openAIApiKey: process.env.OPENAI_API_KEY,
-    temperature: 0.9,
+    temperature: 0,
+    modelName: 'gpt-3.5-turbo',
+  });
+
+  let styleTemplate
+
+  if (proposedStyle) {
+
+    console.log('proposedStyle ]|||||||||}}}} ', proposedStyle)
+
+    styleTemplate = `You are an expert tweet style suggester. Given a proposed style, extrapolate a style guide for the tone, grammar, and punctuation of a tweet.
+
+    Proposed Style:{example}
+
+    Style Guide:`;
+  } else {
+    styleTemplate= `You are a tweet style extractor. Given a tweet, it is your job to return a description of the style of the tweet with regards to its tone, grammar, and punctuation.
+  
+    Tweet: {example}
+    
+    Style Guide:`;
+  }
+  
+  const stylePrompt = new PromptTemplate({
+    template: styleTemplate,
+    inputVariables: ['example'],
+  });
+
+  const styleChain = new LLMChain({
+    llm: stlyeLlm,
+    prompt: stylePrompt,
+    outputKey: 'styleGuide',
+  });
+
+  const tweetTemplate = `You are an expert tweet generator. You will be given an idea, a prompt, and a style guide, and your goal is to write a thought-provoking tweet. Structure the tweet using the tone, grammar, and syntax within the style guide. Do not include hashtags in the tweet!
+  
+  Tweet Idea: ${idea}
+
+  Prompt:${prompt}
+
+  Style Guide: {styleGuide}
+  
+  Generated Tweet:`;
+
+  const tweetLlm = new ChatOpenAI({
+    openAIApiKey: process.env.OPENAI_API_KEY,
+    temperature: 0.7,
     modelName: 'gpt-3.5-turbo',
   });
 
   const tweetPrompt = new PromptTemplate({
     template: tweetTemplate,
-    inputVariables: ['tweetIdea', 'prompt'],
+    inputVariables: ['styleGuide'],
   });
 
-    const tweetChain = new LLMChain({
+  const tweetChain = new LLMChain({
     llm: tweetLlm,
     prompt: tweetPrompt,
-    outputKey: 'newTweetIdeas',
+    outputKey: 'newTweet',
   });
 
-  const result = await tweetChain.call({
-    tweetIdea: idea,
-    prompt: prompt,
+  const overallChain = new SequentialChain({
+    chains: [styleChain, tweetChain],
+    inputVariables: ['example'],
+    outputVariables: ['styleGuide', 'newTweet'],
+    verbose: false,
+  });
+
+  const result = await overallChain.call({
+    example: proposedStyle || exampleTweet,
   });
   console.log('tweet result', result);
   return result;
-}
+};

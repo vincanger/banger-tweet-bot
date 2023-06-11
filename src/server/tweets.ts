@@ -115,10 +115,12 @@ export const sendTweet: SendTweet<string, void> = async (tweetId, context) => {
   const tweet = await client.v2.tweet('Hello World!')
 }
 
-export const generateTweet: GenerateTweet<{idea: string, prompt: string}, any> = async ({idea, prompt}, context) => {
+export const generateTweet: GenerateTweet<{idea: string, prompt: string, exampleTweet: string, proposedStyle?: string}, any> = async ({idea, prompt, exampleTweet, proposedStyle}, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }
-  const tweet = await generateTweetFromIdea(idea, prompt, context.user.username);
+  console.log('yoyoyoy here')
+  const tweet = await generateTweetFromIdea({idea, prompt, exampleTweet, proposedStyle});
+  console.log('yoyoyoy there')
   return tweet;
 }
