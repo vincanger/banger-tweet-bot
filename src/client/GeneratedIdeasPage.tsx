@@ -4,6 +4,8 @@ import { useQuery } from '@wasp/queries';
 import getGeneratedIdeas from '@wasp/queries/getGeneratedIdeas';
 import getTweetDraftsWithIdeas from '@wasp/queries/getTweetDraftsWithIdeas';
 import generateTweet from '@wasp/actions/generateTweet';
+import embedIdea from '@wasp/actions/embedIdea';
+import type { GeneratedIdea } from '@wasp/entities';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
@@ -14,7 +16,9 @@ const twitterIcon: any = twitterSvg();
 
 const GeneratedIdeasPage = ({ match, user }: any) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isIdeaModalOpen, setIsIdeaModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
+  const [ideaModalContent, setIdeaModalContent] = useState<GeneratedIdea>();
   const [exampleTweet, setExampleTweet] = useState('');
   const [editedTweet, setEditedTweet] = useState('');
 
@@ -50,10 +54,15 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
 
   const { data: tweetDrafts, isLoading: isTweetDraftsLoading } = useQuery(getTweetDraftsWithIdeas);
 
-  const handleModalOpen = (idea: string, example?: string) => {
+  const handleGenerateTweetModal = (idea: string, example?: string) => {
     setModalContent(idea);
     if (example) setExampleTweet(example);
     setIsModalOpen((x) => !x);
+  };
+
+  const handleEmbedIdeaModal = (idea: GeneratedIdea) => {
+    setIdeaModalContent(idea);
+    setIsIdeaModalOpen((x) => !x);
   };
 
   return (
@@ -80,7 +89,7 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
                   <div
                     key={index}
                     id={String(tweetDraft.id)}
-                    className={`border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-lg text-left`}
+                    className={`border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-lg text-left w-full`}
                   >
                     <div className='flex flex-col justify-center sm:flex-row sm:justify-evenly w-full'>
                       <div className='flex flex-col p-1'>
@@ -141,13 +150,13 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
                           >
                             <OptionsPopover />
                             <button
-                              onClick={() => handleModalOpen(idea.content)}
+                              onClick={() => handleEmbedIdeaModal(idea)}
                               className='bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-blue-500 font-bold px-3 py-1 text-sm rounded-l-2xl'
                             >
-                              Add Idea to Notes
+                              Edit & Add to Notes
                             </button>
                             <button
-                              onClick={() => handleModalOpen(idea.content, tweetDraft.originalTweet.content)}
+                              onClick={() => handleGenerateTweetModal(idea.content, tweetDraft.originalTweet.content)}
                               className='bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-blue-500 font-bold px-3 py-1 text-sm -ml-px rounded-r-2xl'
                             >
                               Generate Tweet From Idea
@@ -172,6 +181,7 @@ const GeneratedIdeasPage = ({ match, user }: any) => {
         username={user.username}
         exampleTweet={exampleTweet}
       />
+      <IdeaModal idea={ideaModalContent} isIdeaModalOpen={isIdeaModalOpen} setIsIdeaModalOpen={setIsIdeaModalOpen} />
     </div>
   );
 };
@@ -247,13 +257,13 @@ function EditModal({
     e.preventDefault();
     console.log('exampleTweet', exampleTweet);
     if (!exampleTweet || exampleTweet.length == 0) return;
-    let tweetFromIdea; 
-    if(isUserTweetStyle && userTweetStyle.length > 0) {
+    let tweetFromIdea;
+    if (isUserTweetStyle && userTweetStyle.length > 0) {
       tweetFromIdea = await generateTweet({ idea, prompt, exampleTweet, proposedStyle: userTweetStyle });
     } else {
       tweetFromIdea = await generateTweet({ idea, prompt, exampleTweet });
     }
-    
+
     setNewTweet(tweetFromIdea.newTweet.trim());
   };
 
@@ -280,7 +290,7 @@ function EditModal({
           <Dialog.Panel className='w-full h-full p-7'>
             {newTweet.length === 0 ? (
               <>
-                <Dialog.Title>Idea:</Dialog.Title>
+                <Dialog.Title>Generate New Tweet From Idea:</Dialog.Title>
                 <Dialog.Description>{idea}</Dialog.Description>
                 <textarea id='textInput' onChange={handleChange}></textarea>
 
@@ -314,6 +324,85 @@ function EditModal({
                 </div>
               </>
             )}
+          </Dialog.Panel>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function IdeaModal({
+  idea,
+  isIdeaModalOpen,
+  setIsIdeaModalOpen,
+}: {
+  idea: GeneratedIdea | undefined;
+  isIdeaModalOpen: boolean;
+  setIsIdeaModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const [editedIdea, setEditedIdea] = useState('');
+
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textAreaRef.current) {
+      textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
+    }
+    return () => {
+      if (textAreaRef.current) {
+        textAreaRef.current.style.height = 'auto';
+      }
+    };
+  }, [textAreaRef.current]);
+
+  useEffect(() => {
+    if (idea) {
+      console.log('updating editedIdea within Idea Modal');
+      setEditedIdea(idea.content);
+    }
+  }, [idea]);
+
+  const handleEmbedIdea = async (e: any) => {
+    if (!idea) return;
+
+    const embedIdeaResponse = await embedIdea({
+      id: idea.id,
+      idea: editedIdea!,
+      originalTweetId: idea.originalTweetId,
+    });
+    console.log('embedIdeaResponse @@@@@@@@<<<<<<<<>>>>>>@@@@@@@@@ ', embedIdeaResponse);
+  };
+
+  const handleDiscardedIdea = async (e: any) => {
+    if (idea) {
+      setEditedIdea(idea?.content);
+    }
+    setIsIdeaModalOpen(false);
+  };
+
+  return (
+    <Dialog open={isIdeaModalOpen} onClose={() => setIsIdeaModalOpen(false)} className='relative z-50'>
+      <div className='fixed inset-0 bg-black/30' aria-hidden='true' />
+      <div className='fixed inset-0 flex items-center justify-center p-4 overflow-hidden'>
+        <div className='bg-neutral-100 border border-neutral-500 rounded-lg w-full sm:w-[400px] flex flex-col items-center justify-center'>
+          <Dialog.Panel className='w-full h-full p-7'>
+            <>
+              <Dialog.Title>Adding Idea to Vector DB:</Dialog.Title>
+
+              <textarea
+                id='editedIdea'
+                ref={textAreaRef}
+                onChange={(e) => setEditedIdea(e.target.value)}
+                value={editedIdea}
+                className='w-full'
+                style={{ height: textAreaRef.current?.scrollHeight + 'px' }}
+              />
+
+              <div className='flex flex-row justify-between gap-1 m-1'>
+                <button onClick={handleDiscardedIdea}>Discard Idea</button>
+                <button onClick={handleEmbedIdea}>Embed & Save Idea</button>
+              </div>
+            </>
           </Dialog.Panel>
         </div>
       </div>
@@ -364,8 +453,14 @@ function DraftTweetWrapper({
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!textAreaRef.current) return;
-    textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
+    if (textAreaRef.current) {
+      textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
+    }
+    return () => {
+      if (textAreaRef.current) {
+        textAreaRef.current.style.height = 'auto';
+      }
+    };
   }, [textAreaRef.current]);
 
   return (
@@ -390,7 +485,7 @@ function DraftTweetWrapper({
           ref={textAreaRef}
           onChange={handleNewTweetChange}
           defaultValue={newTweet}
-          style={{ height: textAreaRef.current?.scrollHeight }}
+          style={{ height: textAreaRef.current?.scrollHeight + 'px' }}
         />
       </div>
       <div className='border-t border-neutral-500 bg-white/70 flex flex-row m-2 ' />

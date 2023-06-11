@@ -1,4 +1,4 @@
-import type { EmbedIdeas } from '@wasp/actions/types';
+import type { EmbedIdea, EmbedIdeas } from '@wasp/actions/types';
 import type { GetGeneratedIdeas } from '@wasp/queries/types';
 import type { GeneratedIdea } from '@wasp/entities';
 import HttpError from '@wasp/core/HttpError.js';
@@ -54,7 +54,60 @@ export const embedIdeas: EmbedIdeas<number[], void> = async (ids, context) => {
   }
 };
 
-export const getGeneratedIdeas: GetGeneratedIdeas<unknown, GeneratedIdea[]> = async (_args, context) => { 
+type EmbedIdeaArgs = {
+  id: number;
+  idea: string;
+  originalTweetId: number;
+}
+
+export const embedIdea: EmbedIdea<EmbedIdeaArgs, GeneratedIdea> = async ({id, idea, originalTweetId}, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'User is not authorized');
+  }
+  
+  console.log('idea: ', idea)
+
+  try {
+    const newIdea = await context.entities.GeneratedIdea.update({
+      // where id is the id of the idea and userId is the id of the user
+      where: {
+        id: id,
+      },
+      data: {
+        content: idea,
+        originalTweetId
+      }
+    });
+
+    if (!newIdea) {
+      throw new HttpError(404, 'Idea not found');
+    }
+
+    const pinecone = await initPinecone();
+
+    const pineconeIndex = pinecone.Index('embeds-test');
+
+    const vectorStore = new PineconeStore(embeddings, {
+      pineconeIndex: pineconeIndex,
+      namespace: context.user.username,
+    });
+
+
+    const ideaDoc = new Document({
+      metadata: { type: 'note' },
+      pageContent: newIdea.content,
+    });
+
+
+    await vectorStore.addDocuments([ideaDoc]);
+    console.log('idea embedded successfully! /././././././.', newIdea)
+    return newIdea;
+  } catch (error: any) {
+    throw new Error(error);
+  }
+};
+
+export const getGeneratedIdeas: GetGeneratedIdeas<unknown, GeneratedIdea[]> = async (_args, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }
@@ -66,4 +119,4 @@ export const getGeneratedIdeas: GetGeneratedIdeas<unknown, GeneratedIdea[]> = as
   });
 
   return ideas;
-}
+};

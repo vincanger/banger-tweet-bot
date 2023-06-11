@@ -174,6 +174,11 @@ action embedIdeas {
   entities: [GeneratedIdea]
 }
 
+action embedIdea {
+  fn: import { embedIdea } from "@server/ideas.js",
+  entities: [GeneratedIdea]
+}
+
 action sendTweet {
   fn: import { sendTweet } from "@server/tweets.js",
   entities: [Tweet, TweetDraft, AccessTokens, GeneratedIdea, User]
