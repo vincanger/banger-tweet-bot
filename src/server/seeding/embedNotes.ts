@@ -2,18 +2,26 @@ import PrismaClient from '@wasp/dbClient';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { Document } from 'langchain/document';
-import { User } from '@wasp/entities';
-import type { Vector } from '@pinecone-database/pinecone';
 import { PineconeClient } from '@pinecone-database/pinecone';
 import fs from 'fs';
 import path from 'path';
 
+
 /**
- * this must be the same name you'll use to log into the app with
+ * With this file we can run `wasp db seed embedNotes` to embed the notes.txt file
+ * in './src/shared/docs' and add them to the vector store. This helps for testing 
+ * the app and seeding it with some initial data for GPT to generate drafts and ideas from.
+*/
+
+
+/**
+ * This must be the same name you'll use to log into the app with.
+ * It's probably best to use your twitter handle as your app username.
  */
 const NAME_SPACE = 'hot_town';
 /**
  * !! don't change this directory! You can replace the notes.txt file with your own though
+ * for dev seeding of the vector store.
  */
 const SHARED_DIR = './src/shared/docs';
 
@@ -26,6 +34,12 @@ export const initPinecone = async () => {
   return pinecone;
 };
 
+/**
+ * NOTE: I was getting parse errors when trying to embed new documents.
+ * I played around with the stripNewLines option but that didn't seem to help.
+ * In the end, it seems that LangChain parses documents by splitting at punctuation and '\n'
+ * so I added punctuation and '\n' to the regex in the embedNotes function below.
+ */
 const embeddings = new OpenAIEmbeddings({
   // stripNewLines: false,
   openAIApiKey: process.env.OPENAI_API_KEY,
@@ -33,7 +47,7 @@ const embeddings = new OpenAIEmbeddings({
 
 /**
  * we export this function and define it in our main.wasp config file
- * so that we can run it from the command line with `wasp db seed`
+ * so that we can run it from the command line with `wasp db seed embedNotes`
  */
 export const embedNotes = async (prismaClient: typeof PrismaClient) => {
   const pinecone = await initPinecone();
@@ -67,27 +81,28 @@ export const embedNotes = async (prismaClient: typeof PrismaClient) => {
     line = line.replace(/"/g, '');
     line = line.replace(/{/g, '');
     line = line.replace(/}/g, '');
+    line = line.replace(/^\s*[\r\n]/gm, ''); // TODO: not sure about this one
     line = line.trim();
     // check if last character is a period and if not add one
-    if (line[line.length - 1] !== '.') {
+    // if (line[line.length - 1] !== '.') {
+    //   line += '.';
+    // }
+    // check if last character contains punctuation and if not add a period
+    if (line.length > 1 && !line[line.length - 1].match(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g)) {
       line += '.';
     }
-    line += '\n'
+    line += '\n';
 
     const doc = new Document({
       metadata: { type: 'note' },
       pageContent: line,
-    })
-    
+    });
+
     docs.push(doc);
   });
 
   console.log('docs', docs);
 
   await vectorStore.addDocuments(docs);
-  console.log('success!')
-  // await PineconeStore.fromDocuments(docs, embeddings, {
-  //   pineconeIndex: pineconeIndex,
-  //   namespace: NAME_SPACE
-  // });
+  console.log('success!');
 };

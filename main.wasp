@@ -6,17 +6,20 @@ app twitterAgent {
   head: [
     "<script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>"
   ],
+  client: {
+    rootComponent: import App from "@client/App",
+  },
   db: { 
     system: PostgreSQL,
     seeds: [
-      import { runChainScript } from "@server/script.js",
+      import { runChainScript } from "@server/scripts/script.js",
       import { embedNotes } from "@server/seeding/embedNotes.js",
-      import { sendTweetScript } from "@server/script.js",
     ]
   },
   auth: {
     userEntity: User,
     onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/ideas",
     methods: {
       usernameAndPassword: {},
     }
@@ -29,9 +32,15 @@ app twitterAgent {
     ("twitter-api-v2", "1.15.0"),
     ("@pinecone-database/pinecone", "0.1.6"),
     ("@tippyjs/react", "4.2.6"),
-    ("@headlessui/react", "1.7.15")
+    ("@headlessui/react", "1.7.15"),
+    ("react-icons", "4.8.0"),
   ],
 }
+
+// ### ENTITIES ENTITIES ENTITIES
+// #### ENTITIES ENTITIES ENTITIES
+// ##### ENTITIES ENTITIES ENTITIES
+// ###### ENTITIES ENTITIES ENTITIES
 
 entity Tweet {=psl
   id              Int           @id @default(autoincrement())
@@ -39,6 +48,7 @@ entity Tweet {=psl
   author          Author       @relation(fields: [authorId], references: [id])
   authorId        String
   content         String
+  tweetedAt       DateTime     @default(now())
   user            User         @relation(fields: [userId], references: [id])
   userId          Int          
   drafts          TweetDraft[]
@@ -58,7 +68,7 @@ entity TweetDraft {=psl
   id              Int         @id @default(autoincrement())
   content         String
   notes           String
-  originalTweet   Tweet      @relation(fields: [originalTweetId], references: [id])
+  originalTweet   Tweet       @relation(fields: [originalTweetId], references: [id])
   originalTweetId Int
   createdAt       DateTime    @default(now())
   user            User        @relation(fields: [userId], references: [id])
@@ -69,10 +79,12 @@ entity GeneratedIdea {=psl
   id              Int         @id @default(autoincrement())
   content         String
   createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now())
   user            User        @relation(fields: [userId], references: [id])
   userId          Int
-  originalTweet   Tweet       @relation(fields: [originalTweetId], references: [id])
-  originalTweetId Int
+  originalTweet   Tweet?      @relation(fields: [originalTweetId], references: [id])
+  originalTweetId Int?
+  isEmbedded      Boolean     @default(false)
 psl=}
 
 entity VerifyTokens {=psl
@@ -90,7 +102,7 @@ entity AccessTokens {=psl
   refreshToken    String?
   expiresIn       Int?
   updatedAt       DateTime    @default(now())
-  user            User       @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
   userId          Int         @unique
 psl=}
 
@@ -128,15 +140,16 @@ page CallbackPage {
   component: import TwitterCallback from "@client/auth/TwitterCallback"
 }
 
-route GeneratedIdeasRoute { path: "/ideas/:userId", to: GeneratedIdeasPage }
+route GeneratedIdeasRoute { path: "/ideas", to: GeneratedIdeasPage }
 page GeneratedIdeasPage {
   authRequired: true,
   component: import GeneratedIdeas from "@client/GeneratedIdeasPage"
 }
 
-route ParentFileRoute { path: "/parentfile/:id", to: ParentFilePage }
-page ParentFilePage {
-  component: import ParentFile from "@client/ParentFilePage"
+route SettingsRoute { path: "/settings", to: SettingsPage }
+page SettingsPage {
+  authRequired: true,
+  component: import Settings from "@client/SettingsPage"
 }
 
 // ??? QUERIES QUERIES QUERIES
@@ -154,20 +167,15 @@ query getTweetDraftsWithIdeas {
   entities: [TweetDraft, GeneratedIdea, Tweet]
 }
 
+query getAccessTokens {
+  fn: import { getAccessTokens } from "@server/twitterAuth.js",
+  entities: [AccessTokens]
+}
+
 // !!! ACTIONS ACTIONS ACTIONS
 // !!!! ACTIONS ACTIONS ACTIONS
 // !!!!! ACTIONS ACTIONS ACTIONS
 // !!!!!! ACTIONS ACTIONS ACTIONS
-
-action generateMemory {
-  fn: import { generateMemory } from "@server/memory.js",
-  entities: [Tweet, AccessTokens]
-}
-
-action generateTweetFromPrompt {
-  fn: import { generateTweetFromPrompt } from "@server/tweets.js",
-  entities: [Tweet, TweetDraft, GeneratedIdea, User]
-}
 
 action embedIdeas {
   fn: import { embedIdeas } from "@server/ideas.js",
@@ -179,6 +187,11 @@ action embedIdea {
   entities: [GeneratedIdea]
 }
 
+action generateTweet {
+  fn: import { generateTweet } from "@server/tweets.js",
+  entities: [Tweet, TweetDraft, GeneratedIdea, User]
+}
+
 action sendTweet {
   fn: import { sendTweet } from "@server/tweets.js",
   entities: [Tweet, TweetDraft, AccessTokens, GeneratedIdea, User]
@@ -187,29 +200,16 @@ action sendTweet {
 action twitterAuthCallback {
   fn: import { callback } from "@server/twitterAuth.js",
   entities: [VerifyTokens, AccessTokens, User],
-  // httpRoute: (POST, "/twitter/auth/callback")
 }
 
 action twitterAuth {
   fn: import { twitterAuth } from "@server/twitterAuth.js",
   entities: [VerifyTokens, User],
-  // httpRoute: (GET, "/twitter/auth")
 }
 
-action generateTweet {
-  fn: import { generateTweet } from "@server/tweets.js",
-  entities: [Tweet, TweetDraft, GeneratedIdea, User]
-}
-
-// @@@ APIs APIs APIs
-// @@@@ APIs APIs APIs
-// @@@@@ APIs APIs APIs
-// @@@@@@ APIs APIs APIs
-
-
-apiNamespace twitterWare {
-  middlewareConfigFn: import { corsOverride } from "@server/twitterAuth.js",
-  path: "/twitter"
+action updateSettings {
+  fn: import { updateSettings } from "@server/account.js",
+  entities: [User]
 }
 
 // ^^^ JOBS JOBS JOBS
@@ -224,27 +224,9 @@ job replyDraftsJob{
   },
   entities: [Tweet, TweetDraft, GeneratedIdea, User, Author],
   schedule: {
-    // every 6 hours 
-    cron: "0 */6 * * *" 
+    cron: "0 * * * *", // runs every hour. if it fails, it retries 3 times with 5 minute delay
+    executorOptions: {
+      pgBoss: {=json { "retryLimit": 3, "retryDelay": 300 } json=},
+    }
   }
 }
-
-// action generateEmbeddings {
-//   fn: import { generateEmbeddings } from "@server/generateEmbeddings.js",
-//   entities: [Tweet]
-// }
-
-// query getEmbeddedFilenames {
-//   fn: import { getEmbeddedFilenames } from "@server/getEmbeddedFiles.js",
-//   entities:[]
-// }
-
-// query searchEmbeddings {
-//   fn: import { searchEmbeddings } from "@server/searchEmbeddings.js",
-//   entities: [Tweet]
-// }
-
-// query getEmbeddedTextChunk {
-//   fn: import { getEmbeddedTextChunk } from "@server/getEmbeddedFiles.js",
-//   entities: [Tweet]
-// }

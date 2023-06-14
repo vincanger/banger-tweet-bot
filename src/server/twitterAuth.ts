@@ -1,13 +1,8 @@
 import { TwitterAuth, TwitterAuthCallback } from '@wasp/actions/types';
+import { GetAccessTokens } from '@wasp/queries/types';
 import type { VerifyTokens, AccessTokens } from '@wasp/entities';
 import { TwitterApi } from 'twitter-api-v2';
 import HttpError from '@wasp/core/HttpError.js';
-//@ts-ignore
-import cors from 'cors';
-import { MiddlewareConfigFn } from '@wasp/middleware';
-import config from '@wasp/config.js';
-import express from 'express';
-import { type } from 'node:os';
 
 const twitterClient = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID!,
@@ -50,8 +45,7 @@ export const callback: TwitterAuthCallback<{ state: string; code: string }, { ur
   }
 
   const { state, code, } = args;
-  // console.log('][][][] USER ][][][', userId, typeof userId);
-  console.log('][][][] STATE from Callback ][][][', state);
+
   const tokens: VerifyTokens = await context.entities.VerifyTokens.findFirstOrThrow({
     where: {
       state: state as string,
@@ -81,9 +75,19 @@ export const callback: TwitterAuthCallback<{ state: string; code: string }, { ur
   });
 
   console.log('MADE IT <><><><><><>');
-  return { url: process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000' };
+  return { url: (process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000') + '/ideas' };
 };
 
-export const corsOverride: MiddlewareConfigFn = (middlewareConfig) => {
-  return middlewareConfig;
-};
+export const getAccessTokens: GetAccessTokens<unknown, AccessTokens> = async (_args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'User is not authenticated');
+  }
+
+  const tokens = await context.entities.AccessTokens.findFirstOrThrow({
+    where: {
+      userId: context.user.id,
+    },
+  });
+
+  return tokens;
+}

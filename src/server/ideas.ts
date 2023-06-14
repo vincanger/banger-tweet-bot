@@ -55,29 +55,43 @@ export const embedIdeas: EmbedIdeas<number[], void> = async (ids, context) => {
 };
 
 type EmbedIdeaArgs = {
-  id: number;
   idea: string;
-  originalTweetId: number;
-}
+  id?: number;
+  originalTweetId?: number;
+};
 
-export const embedIdea: EmbedIdea<EmbedIdeaArgs, GeneratedIdea> = async ({id, idea, originalTweetId}, context) => {
+/**
+ * Embeds a single idea into the vector store
+ */
+export const embedIdea: EmbedIdea<EmbedIdeaArgs, GeneratedIdea> = async ({ id, idea, originalTweetId }, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }
-  
-  console.log('idea: ', idea)
+
+  console.log('idea: ', idea);
 
   try {
-    const newIdea = await context.entities.GeneratedIdea.update({
-      // where id is the id of the idea and userId is the id of the user
-      where: {
-        id: id,
-      },
-      data: {
-        content: idea,
-        originalTweetId
-      }
-    });
+    let newIdea;
+
+    if (id && originalTweetId) {
+      newIdea = await context.entities.GeneratedIdea.update({
+        where: {
+          id: id,
+        },
+        data: {
+          content: idea,
+          originalTweetId,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      newIdea = await context.entities.GeneratedIdea.create({
+        data: {
+          content: idea,
+          userId: context.user.id,
+        },
+      });
+    }
 
     if (!newIdea) {
       throw new HttpError(404, 'Idea not found');
@@ -92,15 +106,22 @@ export const embedIdea: EmbedIdea<EmbedIdeaArgs, GeneratedIdea> = async ({id, id
       namespace: context.user.username,
     });
 
-
     const ideaDoc = new Document({
       metadata: { type: 'note' },
       pageContent: newIdea.content,
     });
 
-
     await vectorStore.addDocuments([ideaDoc]);
-    console.log('idea embedded successfully! /././././././.', newIdea)
+
+    newIdea = await context.entities.GeneratedIdea.update({
+      where: {
+        id: newIdea.id,
+      },
+      data: {
+        isEmbedded: true,
+      },
+    });
+    console.log('idea embedded successfully! /././././././.', newIdea);
     return newIdea;
   } catch (error: any) {
     throw new Error(error);

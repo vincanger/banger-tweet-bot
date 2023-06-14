@@ -9,17 +9,23 @@ export default () => {
     setShowSignupForm((x) => !x);
   };
 
+  const appearance = {
+    colors: {// blue
+      brand: 'text-neutral-800',
+      brandAccent: '#3482F6', // pink
+    },
+  };
+
   return (
-    <div className='min-h-screen bg-amber-50'>
+    <div className='min-h-screen bg-neutral-300/70'>
       <div className='w-full sm:w-2/3 mx-auto'>
         <div className='py-7 flex flex-col items-center'>
-          {showSignupForm ? <SignupForm/> : <LoginForm />}
+          {showSignupForm ? <SignupForm appearance={appearance} /> : <LoginForm appearance={appearance} />}
           {/* create a subtitle text div */}
 
-            <div onClick={handleShowSignupForm} className='text-sm mt-5 underline'>
-              {showSignupForm ? 'Already Registered? Login!' : 'No Account? Sign up!'}
-            </div>
-
+          <div onClick={handleShowSignupForm} className='text-sm mt-5 underline'>
+            {showSignupForm ? 'Already Registered? Login!' : 'No Account? Sign up!'}
+          </div>
         </div>
       </div>
     </div>

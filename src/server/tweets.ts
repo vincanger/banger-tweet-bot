@@ -1,20 +1,15 @@
-import { generateDraftFromPrompt, generateTweetFromIdea } from './runChain.js';
-import { GenerateTweetFromPrompt, SendTweet, GenerateTweet } from '@wasp/actions/types';
+import { generateTweetFromIdea } from './runChain.js';
+import { SendTweet, GenerateTweet } from '@wasp/actions/types';
 import { GetTweetDraftsWithIdeas } from '@wasp/queries/types';
 import HttpError from '@wasp/core/HttpError.js';
-import type { TweetDraft, Tweet, GeneratedIdea } from '@wasp/entities';
-import { TwitterApi } from 'twitter-api-v2';
+import type { GeneratedIdea } from '@wasp/entities';
+import { TwitterApi, TweetV2PostTweetResult } from 'twitter-api-v2';
 
 
 const twitterClient = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID!,
   clientSecret: process.env.TWITTER_CLIENT_SECRET!,
 });
-
-type ChainDraftResponse = {
-  newTweetIdeas: string;
-  unhingedTweet: string;
-};
 
 type TweetDraftsWithIdeas = {
   id: number;
@@ -25,6 +20,7 @@ type TweetDraftsWithIdeas = {
     id: number;
     content: string;
     tweetId: string;
+    tweetedAt: Date;
     ideas: GeneratedIdea[];
     author: {
       username: string;
@@ -34,15 +30,6 @@ type TweetDraftsWithIdeas = {
   };
 }[];
 
-export const generateTweetFromPrompt: GenerateTweetFromPrompt<string, ChainDraftResponse> = async (prompt, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'User is not authorized');
-  }
-
-  const draft = await generateDraftFromPrompt(prompt, context.user.username) as ChainDraftResponse;
-
-  return draft;
-};
 
 export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraftsWithIdeas> = async (_args, context) => {
   if (!context.user) {
@@ -51,13 +38,17 @@ export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraf
 
   const drafts = await context.entities.TweetDraft.findMany({
     orderBy: {
-      createdAt: 'desc',
+      // createdAt: 'desc',
+      originalTweet: {
+        tweetedAt: 'desc',
+      }
     },
     where: {
       userId: context.user.id,
-      // createdAt: {
-      //   gte: new Date(Date.now() - 12 * 60 * 60 * 1000),
-      // },
+      createdAt: {
+        // gte: new Date(Date.now() - 12 * 60 * 60 * 1000),
+        gte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // NOTE: within the last two days? I'm not sure what a good timeframe is here.
+      },
     },
     select: {
       id: true,
@@ -70,13 +61,14 @@ export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraf
           tweetId: true,
           content: true,
           ideas: true,
+          tweetedAt: true,
           author: {
             select: {
               username: true,
               displayName: true,
               profilePic: true,
-            }
-          }
+            },
+          },
         },
       },
     },
@@ -85,42 +77,44 @@ export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraf
   return drafts;
 };
 
-export const sendTweet: SendTweet<string, void> = async (tweetId, context) => {
+export const sendTweet: SendTweet<string, TweetV2PostTweetResult> = async (tweetContent, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }
-
-  const accessTokens = await context.entities.AccessTokens.findFirst({
-    where: {
-      userId: 1,
+  try {
+    const accessTokens = await context.entities.AccessTokens.findFirst({
+      where: {
+        userId: context.user.id,
+      },
+    });
+  
+    if (!accessTokens || !accessTokens.refreshToken) {
+      throw new HttpError(401, 'Please connect your Twitter account first');
     }
-  });
-
-  if (!accessTokens || !accessTokens.refreshToken) {
-    throw new HttpError(401, 'User is not Twitter authenticated')
-  } 
-
-  const { client, accessToken, refreshToken } = await twitterClient.refreshOAuth2Token(accessTokens.refreshToken)
-
-  await context.entities.AccessTokens.update({
-    where: {
-      userId: 1,
-    },
-    data: {
-      accessToken,
-      refreshToken,
-    },
-  });
-
-  const tweet = await client.v2.tweet('Hello World!')
-}
+  
+    const { client, accessToken, refreshToken } = await twitterClient.refreshOAuth2Token(accessTokens.refreshToken);
+  
+    await context.entities.AccessTokens.update({
+      where: {
+        userId: context.user.id,
+      },
+      data: {
+        accessToken,
+        refreshToken,
+      },
+    });
+  
+    return await client.v2.tweet(tweetContent);
+    
+  } catch (error) {
+    throw new HttpError(500, error);
+  }
+};
 
 export const generateTweet: GenerateTweet<{idea: string, prompt: string, exampleTweet: string, proposedStyle?: string}, any> = async ({idea, prompt, exampleTweet, proposedStyle}, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }
-  console.log('yoyoyoy here')
   const tweet = await generateTweetFromIdea({idea, prompt, exampleTweet, proposedStyle});
-  console.log('yoyoyoy there')
   return tweet;
 }
