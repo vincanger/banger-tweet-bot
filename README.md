@@ -25,7 +25,9 @@ But LLMs are great at producing a large quantity and variation of ideas. So if w
 
 In addition, this app acts on the assumption that certain twitter users are the "trend-makers" on the platform. Hence why we fetch tweets from your favorite tweeters and find your most relevant notes. This way, not only is the brainstorming process more relevant to you, but the ideas generated are more likely to be relevant to the current twitter discourse amongst your twitter community.
 
+<div align="center">
 <img src='./twitter-agent-graph.png' width='350px'>
+</div>
 
 *super informative graph of how the app works*
 
