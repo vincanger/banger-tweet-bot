@@ -15,7 +15,6 @@ import { AiOutlineLoading, AiOutlineInfoCircle } from 'react-icons/ai';
 const twitterIcon: any = twitterSvg();
 
 const GeneratedIdeasPage = ({ user }: { user: User }) => {
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [exampleTweet, setExampleTweet] = useState('');
@@ -41,7 +40,14 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   }
 
   if (user.favUsers.length === 0) {
-    return <span className='mx-auto w-full p-4 text-center'>You must first add your favorite twitter users in <a href='/settings' className='underline'>Settings</a></span>;
+    return (
+      <span className='mx-auto w-full p-4 text-center'>
+        You must first add your favorite twitter users in{' '}
+        <a href='/settings' className='underline'>
+          Settings
+        </a>
+      </span>
+    );
   }
 
   return (
@@ -140,17 +146,15 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                   </div>
                   {tweetDraft.originalTweet?.ideas
                     .map((idea, index) => (
-
-                        <Accordion
-                          idea={idea}
-                          key={idea.updatedAt.getTime() + index}
-                          originalTweetContent={tweetDraft.originalTweet.content}
-                          handleEmbedIdeaPopover={handleEmbedIdeaPopover}
-                          handleGenerateTweetModal={handleGenerateTweetModal}
-                        />
-
+                      <Accordion
+                        idea={idea}
+                        key={idea.updatedAt.getTime() + index}
+                        originalTweetContent={tweetDraft.originalTweet.content}
+                        handleEmbedIdeaPopover={handleEmbedIdeaPopover}
+                        handleGenerateTweetModal={handleGenerateTweetModal}
+                      />
                     ))
-                    .sort((a, b) => b.props.children?.key - a.props.children?.key)}
+                    .sort((a, b) => Number(b.key) - Number(a.key))}
                 </div>
               </div>
             ))}
