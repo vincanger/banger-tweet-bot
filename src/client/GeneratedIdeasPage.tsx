@@ -11,9 +11,9 @@ import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
 import Accordion from './components/Accordion';
 import { AiOutlineLoading, AiOutlineInfoCircle, AiOutlineGithub } from 'react-icons/ai';
-import { GiTreeBeehive } from 'react-icons/gi'
+import { GiTreeBeehive } from 'react-icons/gi';
 import { TwitterTweetEmbed } from 'react-twitter-embed';
-import Skeleton from './components/Skeleton'
+import Skeleton from './components/Skeleton';
 
 const twitterIcon: any = twitterSvg();
 
@@ -25,6 +25,10 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   const { popoverButtonRef, setIdeaObject } = useContext(AppContext);
 
   const { data: tweetDrafts, isLoading: isTweetDraftsLoading } = useQuery(getTweetDraftsWithIdeas);
+
+  useEffect(() => {
+    console.log('tweetDrafts', tweetDrafts);
+  }, [tweetDrafts]);
 
   const handleGenerateTweetModal = (idea: string, example?: string) => {
     setModalContent(idea);
@@ -42,7 +46,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
     return <span className='mx-auto w-full p-4 text-center'>Loading...</span>;
   }
 
-  if (user.favUsers.length === 0) {
+  if (user.favUsers.length === 0 || (tweetDrafts?.length && tweetDrafts.length === 0)) {
     return (
       <span className='mx-auto w-full text-center'>
         <div className='py-7 flex flex-col sm:flex-row gap-1 justify-center items-center'>
@@ -58,7 +62,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   return (
     <div className='sm:inline-block mx-auto'>
       <div className='py-7 flex flex-col items-center'>
-        <div className='flex pb-4 pt-4 items-center justify-center items-center px-3 w-3/5'>
+        <div className='flex pb-4 pt-4 items-center justify-center items-center px-3 w-full'>
           <div className='w-1/6 border-t border-neutral-700'></div>
           <div className='flex flex-row gap-1  text-neutral-500  px-5 '>
             {/* <span className='text-xl'>
@@ -182,7 +186,12 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
             ))}
           </div>
         ) : (
-          'New ideas are automatically generated every hour! To get started, make sure to add some of your own ideas to the vector store, as well as your favorite twitter users in Settings.'
+          <div className='border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-xl text-left w-full'>
+            <div className='p-2 flex flex-col sm:flex-row gap-1 justify-center items-center w-full'>
+              <span>⚠️ New ideas and drafts are generated every 1 hour.</span>
+              <span>Add some notes to improve the ideas that will be generated for you.</span>
+            </div>
+          </div>
         )}
       </div>
       <EditModal
