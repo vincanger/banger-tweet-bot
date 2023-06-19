@@ -52,7 +52,7 @@ function EmbedNotePopover() {
   const { popoverButtonRef, editedIdea, setEditedIdea, ideaObject, setIdeaObject } = useContext(AppContext);
 
   const [isIdeaEmbedding, setIsIdeaEmbedding] = useState(false);
-  const [isIdeaSaved, setIsIdeaSaved] = useState(false); 
+  const [isIdeaSaved, setIsIdeaSaved] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ function EmbedNotePopover() {
                     />
                   </div>
                   <div className='bg-gray-50 p-4'>
-                    <div className='flex flex-row justify-between gap-1 mx-1 mt-4'>
+                    <div className='flex flex-row justify-between gap-1 mx-1 mt-2'>
                       <PillButton
                         onClick={() => {
                           setEditedIdea('');
@@ -150,6 +150,7 @@ function EmbedNotePopover() {
                       >
                         Discard Idea
                       </PillButton>
+
                       <PillButton onClick={handleEmbedIdea} isLoading={isIdeaEmbedding}>
                         <Tippy content='Note Added!' visible={isIdeaSaved} onClickOutside={() => setIsIdeaSaved(false)}>
                           <span>Embed & Save Idea</span>

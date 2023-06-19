@@ -10,7 +10,10 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
 import Accordion from './components/Accordion';
-import { AiOutlineLoading, AiOutlineInfoCircle } from 'react-icons/ai';
+import { AiOutlineLoading, AiOutlineInfoCircle, AiOutlineGithub } from 'react-icons/ai';
+import { GiTreeBeehive } from 'react-icons/gi'
+import { TwitterTweetEmbed } from 'react-twitter-embed';
+import Skeleton from './components/Skeleton'
 
 const twitterIcon: any = twitterSvg();
 
@@ -53,10 +56,36 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   return (
     <div className='sm:inline-block mx-auto'>
       <div className='py-7 flex flex-col items-center'>
-        <div className='flex pb-4 pt-4 items-center justify-evenly w-3/5'>
-          <div className='w-2/6 border-t border-neutral-700'></div>
-          <span className='text-neutral-700 text-center'>✨ 🐝 ✨</span>
-          <div className='w-2/6 border-t border-neutral-700'></div>
+        <div className='flex pb-4 pt-4 items-center justify-center items-center px-3 w-3/5'>
+          <div className='w-1/6 border-t border-neutral-700'></div>
+          <div className='flex flex-row gap-1  text-neutral-500  px-5 '>
+            {/* <span className='text-xl'>
+              <GiTreeBeehive className='text-xl text-neutral-700' />
+            </span> */}
+
+            <span className='px-3'>
+              Made with{' '}
+              <a href='https://js.langchain.com/docs/' className='hover:underline hover:text-neutral-700'>
+                LangChain
+              </a>
+              ,{' '}
+              <a href='https://pinecone.io' className='hover:underline hover:text-neutral-700'>
+                Pinecone
+              </a>
+              , and{' '}
+              <a href='https://wasp-lang.dev' className='hover:underline hover:text-neutral-700'>
+                {'Wasp = }'}
+              </a>
+            </span>
+
+            <a
+              href='https://github.com/vincanger/banger-tweet-bot'
+              className='flex flex-row justify-center items-center'
+            >
+              <AiOutlineGithub className='text-xl text-neutral-500 hover:text-neutral-700' />
+            </a>
+          </div>
+          <div className='w-1/6 border-t border-neutral-700'></div>
         </div>
       </div>
       <div className='flex flex-col sm:flex-row justify-center'>
@@ -73,16 +102,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                     <h2 className='ml-1 mb-3 mt-1 font-bold'>Original Tweet</h2>
                     <div className='flex flex-row gap-4 items-start'>
                       <div className='w-[335px] -mt-3'>
-                        <blockquote className='twitter-tweet'>
-                          <p lang='en' dir='ltr'>
-                            {tweetDraft.originalTweet?.content}
-                          </p>
-                          <a
-                            href={`https://twitter.com/${tweetDraft.originalTweet.author.username}/status/${tweetDraft.originalTweet.tweetId}`}
-                          >
-                            {tweetDraft.originalTweet.tweetedAt.toDateString()}
-                          </a>
-                        </blockquote>{' '}
+                        <TwitterTweetEmbed tweetId={tweetDraft.originalTweet.tweetId} placeholder={<Skeleton />} />
                       </div>
                     </div>
                   </div>
@@ -160,7 +180,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
             ))}
           </div>
         ) : (
-          'your ideas will appear here once they are generated!'
+          'New ideas are automatically generated every hour! To get started, make sure to add some of your own ideas to the vector store, as well as your favorite twitter users in Settings.'
         )}
       </div>
       <EditModal
@@ -170,7 +190,6 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
         username={user.username}
         exampleTweet={exampleTweet}
       />
-      {/* <script async src='https://platform.twitter.com/widgets.js' charSet='utf-8'/> */}
     </div>
   );
 };

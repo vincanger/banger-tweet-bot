@@ -123,12 +123,19 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
     /**
      * vector store results for notes similar to the original tweet
      */
-    const searchRes = await vectorStore.similaritySearch(topicGuide, 2);
+    // const searchRes = await vectorStore.similaritySearch(topicGuide, 2);
     // searchRes[0].pageContent;
     // loop through searchRes and concatenate all pageContent into a single string
+    // const notes = searchRes
+    //   .filter((res) => res.pageContent.length >= 3)
+    //   .map((res) => res.pageContent)
+    //   .join(' ');
+    const searchRes = await vectorStore.similaritySearchWithScore(topicGuide, 2);
+    console.log('searchRes: ', searchRes)
     const notes = searchRes
-      .filter((res) => res.pageContent.length >= 3)
-      .map((res) => res.pageContent)
+      .filter(res => res[0].pageContent.length >= 3)
+      .filter(res => res[1] > 0.7)
+      .map(res => res[0].pageContent)
       .join(' ');
 
     console.log('\n\nsimilarity search results [][][--0->', notes);

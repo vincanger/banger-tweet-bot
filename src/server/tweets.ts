@@ -47,7 +47,7 @@ export const getTweetDraftsWithIdeas: GetTweetDraftsWithIdeas<unknown, TweetDraf
       userId: context.user.id,
       createdAt: {
         // gte: new Date(Date.now() - 12 * 60 * 60 * 1000),
-        gte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // NOTE: within the last two days? I'm not sure what a good timeframe is here.
+        gte: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // NOTE: within the last two days? I'm not sure what a good timeframe is here.
       },
     },
     select: {

@@ -3,9 +3,6 @@ app twitterAgent {
     version: "^0.10.6"
   },
   title: "twitter-agent",
-  head: [
-    "<script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>"
-  ],
   client: {
     rootComponent: import App from "@client/App",
   },
@@ -34,6 +31,7 @@ app twitterAgent {
     ("@tippyjs/react", "4.2.6"),
     ("@headlessui/react", "1.7.15"),
     ("react-icons", "4.8.0"),
+    ("react-twitter-embed", "4.0.4")
   ],
 }
 
@@ -224,9 +222,9 @@ job replyDraftsJob{
   },
   entities: [Tweet, TweetDraft, GeneratedIdea, User, Author],
   schedule: {
-    cron: "0 * * * *", // runs every hour. if it fails, it retries 3 times with 5 minute delay
+    cron: "0 * * * *", // runs every hour. if it fails, it retries 2 times with 2 minute delay
     executorOptions: {
-      pgBoss: {=json { "retryLimit": 3, "retryDelay": 300 } json=},
+      pgBoss: {=json { "retryLimit": 2, "retryDelay": 120 } json=},
     }
   }
 }

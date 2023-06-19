@@ -1,8 +1,8 @@
 import prismaClient from '@wasp/dbClient';
 import { User } from '@wasp/entities';
 import { generateDrafts } from '../runChain.js';
-import { Rettiwt } from 'rettiwt-api';
 import HttpError from '@wasp/core/HttpError.js';
+import { Rettiwt } from 'rettiwt-api';
 const twitter = Rettiwt();
 
 type UserDelegate = typeof prismaClient.user;

@@ -22,6 +22,9 @@ export default () => {
         <div className='py-7 flex flex-col items-center'>
           {showSignupForm ? <SignupForm appearance={appearance} /> : <LoginForm appearance={appearance} />}
           {/* create a subtitle text div */}
+          {showSignupForm && (
+            <div className='mt-5'>ℹ️ It's best to use your twitter username when registering for this app</div>
+          )}
 
           <div onClick={handleShowSignupForm} className='text-sm mt-5 underline'>
             {showSignupForm ? 'Already Registered? Login!' : 'No Account? Sign up!'}
