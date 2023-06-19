@@ -1,4 +1,4 @@
-# Personal Twitter Brainstorming Agent 🐦🧠
+# tha BANGER TWEET BOT aka Personal Twitter Brainstorming Agent 🐦🧠
 
 ## What is it?
 
