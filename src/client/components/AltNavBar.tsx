@@ -25,7 +25,7 @@ export default function NavBar() {
           <div className='flex justify-between w-full'>
             <div className='flex text-neutral-800'>
               <div className='flex sm:space-x-8'>
-                <a href='/ideas' className={current.includes('ideas') ? active : inactive}>
+                <a href='/' className={current.includes('ideas') ? active : inactive}>
                   <MdOutlineAutoAwesome className='h-6 w-6 mr-2' />
                   <span className='hidden sm:block'>Tweets & Ideas</span>
                 </a>

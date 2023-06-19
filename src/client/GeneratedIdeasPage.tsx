@@ -44,11 +44,13 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
 
   if (user.favUsers.length === 0) {
     return (
-      <span className='mx-auto w-full p-4 text-center'>
-        You must first add your favorite twitter users in{' '}
-        <a href='/settings' className='underline'>
-          Settings
-        </a>
+      <span className='mx-auto w-full text-center'>
+        <div className='py-7 flex flex-col sm:flex-row gap-1 justify-center items-center'>
+          <span>⚠️ You must first add your favorite twitter users in </span>
+          <a href='/settings' className='underline'>
+            Settings
+          </a>
+        </div>
       </span>
     );
   }
@@ -385,7 +387,9 @@ export function PillButton({ textColor, isLoading, children, ...otherProps }: Pi
       {...otherProps}
       className={`flex flex-row justify-center items-center bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 ${
         textColor ? textColor : 'text-blue-500'
-      } font-bold px-3 py-1 text-sm rounded-lg ${isLoading ? ' pointer-events-none opacity-70' : 'cursor-pointer'}`}
+      } font-bold whitespace-nowrap px-3 py-1 text-sm rounded-lg ${
+        isLoading ? ' pointer-events-none opacity-70' : 'cursor-pointer'
+      }`}
     >
       <AiOutlineLoading className={`animate-spin absolute ${isLoading ? 'block' : 'invisible'}`} />
       <span className={`${isLoading ? 'invisible' : 'flex flex-row'}`}>{children}</span>

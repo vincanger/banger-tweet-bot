@@ -75,19 +75,24 @@ export const callback: TwitterAuthCallback<{ state: string; code: string }, { ur
   });
 
   console.log('MADE IT <><><><><><>');
-  return { url: (process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000') + '/ideas' };
+  return { url: process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000' };
 };
 
-export const getAccessTokens: GetAccessTokens<unknown, AccessTokens> = async (_args, context) => {
+export const getAccessTokens: GetAccessTokens<unknown, AccessTokens | null> = async (_args, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authenticated');
   }
-
-  const tokens = await context.entities.AccessTokens.findFirstOrThrow({
-    where: {
-      userId: context.user.id,
-    },
-  });
-
-  return tokens;
+  try {
+    
+      const tokens = await context.entities.AccessTokens.findFirst({
+        where: {
+          userId: context.user.id,
+        },
+      });
+    
+      return tokens;
+    
+  } catch (error: any) {
+    throw new HttpError(500, error.message);
+  }
 }

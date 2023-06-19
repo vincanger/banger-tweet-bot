@@ -12,6 +12,10 @@ import type { User } from '@wasp/entities';
 const SettingsPage = ({ user }: { user: User }) => {
   const { data: accessTokens, isLoading } = useQuery(getAccessTokens);
 
+  useEffect(() => {
+    console.log('accessTokens', accessTokens);
+  } , [accessTokens])
+
   const handleTwitterAuth = async () => {
     const res = await twitterAuth();
     console.log('res -- url', res);

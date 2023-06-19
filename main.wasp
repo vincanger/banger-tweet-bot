@@ -16,7 +16,6 @@ app twitterAgent {
   auth: {
     userEntity: User,
     onAuthFailedRedirectTo: "/login",
-    onAuthSucceededRedirectTo: "/ideas",
     methods: {
       usernameAndPassword: {},
     }
@@ -122,12 +121,6 @@ psl=}
 // <<<<< ROUTES ROUTES ROUTES
 // <<<<<< ROUTES ROUTES ROUTES
 
-route RootRoute { path: "/", to: MainPage }
-page MainPage {
-  authRequired: true,
-  component: import Main from "@client/MainPage"
-}
-
 route LoginPageRoute { path: "/login", to: LoginPage }
 page LoginPage {
   component: import Login from "@client/auth/LoginPage"
@@ -138,7 +131,7 @@ page CallbackPage {
   component: import TwitterCallback from "@client/auth/TwitterCallback"
 }
 
-route GeneratedIdeasRoute { path: "/ideas", to: GeneratedIdeasPage }
+route GeneratedIdeasRoute { path: "/", to: GeneratedIdeasPage }
 page GeneratedIdeasPage {
   authRequired: true,
   component: import GeneratedIdeas from "@client/GeneratedIdeasPage"
