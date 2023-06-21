@@ -10,7 +10,7 @@ export default function Accordion({
   handleEmbedIdeaPopover,
   handleGenerateTweetModal,
   deleteIdea,
-  isUpdate
+  isUpdate,
 }: {
   idea: GeneratedIdea;
   originalTweetContent?: string;
@@ -35,8 +35,8 @@ export default function Accordion({
                 <HiChevronUp className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-blue-500`} />
               </Disclosure.Button>
               <Disclosure.Panel className=' pt-3 flex flex-row justify-between gap-0'>
-                {deleteIdea && (
-                  <div className='pt-3 flex flex-row justify-start gap-0'>
+                <div className='pt-3 flex flex-row justify-start gap-0'>
+                  {deleteIdea && (
                     <Tippy content='Delete Idea From Vector Store & DB'>
                       <button
                         onClick={() => deleteIdea && deleteIdea(idea.id)}
@@ -45,8 +45,8 @@ export default function Accordion({
                         <HiOutlineTrash className='h-5 w-5' />
                       </button>
                     </Tippy>
-                  </div>
-                )}
+                  )}
+                </div>
                 <div className=' pt-3 flex flex-row justify-end gap-0'>
                   <Tippy content={!isUpdate ? 'Edit Idea & Add To Notes' : 'Edit & Update Note'}>
                     <button
