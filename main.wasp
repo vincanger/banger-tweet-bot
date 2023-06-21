@@ -201,7 +201,7 @@ action deleteIdea {
 
 action generateTweetDraftsAndIdeas {
   fn: import { generateTweetDraftsAndIdeas } from "@server/tweets.js",
-  entities: [Tweet, TweetDraft, GeneratedIdea, User]
+  entities: [Tweet, TweetDraft, GeneratedIdea, Author, User]
 }
 
 action generateTweet {

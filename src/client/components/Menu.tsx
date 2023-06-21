@@ -12,7 +12,12 @@ export default function MyDropdown() {
   const handleBrainstormAction = async () => {
     try {
       setIsBrainstorming(true);
-      await generateTweetDraftsAndIdeas();
+      const res = await generateTweetDraftsAndIdeas();
+      if (res.newTweetDraftsAmount === 0) {
+        alert('Nothing new was generated because you\'re all caught up! Try again later.');
+      } else {
+        alert(`Generated ${res.newTweetDraftsAmount} new tweet drafts and ${res.newIdeaAmount} ideas!`);
+      }
     } catch (error: any) {
       alert(error.message);
     } finally {

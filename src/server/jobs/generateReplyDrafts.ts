@@ -54,8 +54,8 @@ export default async function generateReplyDraftsJob(args: any, context: Context
           const createdAt = new Date(tweet.createdAt);
           const now = new Date();
           // const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-          const twelveHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          return createdAt > twelveHoursAgo;
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          return createdAt > oneDayAgo;
         });
 
         const author = await context.entities.Author.upsert({

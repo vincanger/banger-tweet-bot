@@ -218,6 +218,7 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
     2. The tweet should not market a product or service. This is not an advertisement!
     3. The tweet should be written using the style guide as a loose guide for the tone, grammar, and punctuation of the tweet.
     4. If you think the tweet does not need to be revised, simply reply with the original tweet.
+    5. The tweet should not be longer than 280 characters.
 
     Style Guide: ${styleGuide}
 

@@ -67,6 +67,10 @@ export function InputFields({ user }: { user: User }) {
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
+    // remove @ symbol if it exists
+    if (e.target.value[0] === '@') {
+      e.target.value = e.target.value.slice(1);
+    }
     const newFields = [...fields];
     newFields[index] = e.target.value;
     setFields(newFields);
