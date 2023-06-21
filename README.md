@@ -4,7 +4,7 @@
 
 The goal of this app is to help you become a **more consistent and creative tweeter**. 
 
-It does this by using a combination of your own notes and ideas along with recent tweets from your favorite tweeters to brainstorm and generate new ideas and tweet drafts for you. 
+It does this by using a combination of your own notes and ideas along with recent tweets from trend-setting twitter users to brainstorm and generate new ideas and tweet drafts for you. 
 
 **This is not a hands-off twitter bot.** 
 
@@ -23,7 +23,7 @@ Language Models, such as GPT, are great at deterministic tasks, but when it come
 
 But LLMs are great at producing a large quantity and variation of ideas. So if we treat them as simple idea generators, or **brainstormers**, we can use them to help us come up with new ideas and then use our own creativity to turn those ideas into banger tweets 💥
 
-In addition, this app acts on the assumption that certain twitter users are the "trend-makers" on the platform. Hence why we fetch tweets from your favorite tweeters and find your most relevant notes. This way, not only is the brainstorming process more relevant to you, but the ideas generated are more likely to be relevant to the current twitter discourse amongst your twitter community.
+In addition, this app acts on the assumption that certain twitter users are the "trend-makers" on the platform. Hence why we fetch tweets from these tweeters and find your most relevant notes. This way, not only is the brainstorming process more relevant to you, but the ideas generated are more likely to be relevant to the current twitter discourse amongst your twitter community.
 
 <div align="center">
 <img src='./twitter-agent-graph.png' width='350px'>

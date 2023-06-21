@@ -56,7 +56,7 @@ export default () => {
             <div className='mt-5'>ℹ️ It's best to use your twitter username when registering for this app</div>
           )}
 
-          <div onClick={handleShowSignupForm} className='text-sm mt-5 underline'>
+          <div onClick={handleShowSignupForm} className='text-sm mt-5 underline hover:opacity-90 cursor-pointer'>
             {showSignupForm ? 'Already Registered? Login!' : 'No Account? Sign up!'}
           </div>
         </div>

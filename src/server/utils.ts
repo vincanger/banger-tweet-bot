@@ -1,5 +1,6 @@
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { PineconeClient } from '@pinecone-database/pinecone';
+import { Configuration, OpenAIApi } from 'openai';
 
 const pinecone = new PineconeClient();
 export const initPinecone = async () => {
@@ -18,3 +19,6 @@ export const initPinecone = async () => {
 export const embeddings = new OpenAIEmbeddings({
   openAIApiKey: process.env.OPENAI_API_KEY,
 });
+
+const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
+export const openai = new OpenAIApi(configuration);

@@ -12,13 +12,8 @@ import type { User } from '@wasp/entities';
 const SettingsPage = ({ user }: { user: User }) => {
   const { data: accessTokens, isLoading } = useQuery(getAccessTokens);
 
-  useEffect(() => {
-    console.log('accessTokens', accessTokens);
-  } , [accessTokens])
-
   const handleTwitterAuth = async () => {
     const res = await twitterAuth();
-    console.log('res -- url', res);
     window.location.href = res;
   };
 
@@ -95,10 +90,10 @@ export function InputFields({ user }: { user: User }) {
   return (
     <div className='w-full p-4'>
       <div className='flex flex-row justify-start items-start'>
-        <h2 className='ml-1 font-bold'>Your Favorite Twitter Accounts</h2>
+        <h2 className='ml-1 font-bold'>Trend-Setting Twitter Accounts</h2>
         <Tippy
           placement={'top'}
-          content='Recent tweets from your favorite accounts, along with your own notes, will be used to generate new ideas and tweet drafts. Try to include at least 3 accounts.'
+          content='Recent tweets from your these twitter accounts, along with your own notes, will be used to generate new ideas and tweet drafts. Try to include at least 3 accounts.'
         >
           <span className='ml-1'>
             <AiOutlineInfoCircle />

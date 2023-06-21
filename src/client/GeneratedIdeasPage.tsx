@@ -4,16 +4,17 @@ import AppContext from './Context';
 import { useQuery } from '@wasp/queries';
 import getTweetDraftsWithIdeas from '@wasp/queries/getTweetDraftsWithIdeas';
 import generateTweet from '@wasp/actions/generateTweet';
+import generateTweetDraftsAndIdeas from '@wasp/actions/generateTweetDraftsAndIdeas';
 import sendTweet from '@wasp/actions/sendTweet';
 import type { GeneratedIdea, User } from '@wasp/entities';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
 import Accordion from './components/Accordion';
-import { AiOutlineLoading, AiOutlineInfoCircle, AiOutlineGithub } from 'react-icons/ai';
-import { GiTreeBeehive } from 'react-icons/gi';
-import { TwitterTweetEmbed } from 'react-twitter-embed';
-import Skeleton from './components/Skeleton';
+import { AiOutlineLoading, AiOutlineInfoCircle } from 'react-icons/ai';
+import StyleWrapper from './components/StyleWrapper';
+// import { TwitterTweetEmbed } from 'react-twitter-embed';
+// import Skeleton from './components/Skeleton';
 
 const twitterIcon: any = twitterSvg();
 
@@ -21,14 +22,25 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [exampleTweet, setExampleTweet] = useState('');
+  const [isBrainstorming, setIsBrainstorming] = useState(false);
+  const [showTooltip, setShowTooltip] =  useState(false);
 
   const { popoverButtonRef, setIdeaObject } = useContext(AppContext);
 
   const { data: tweetDrafts, isLoading: isTweetDraftsLoading } = useQuery(getTweetDraftsWithIdeas);
 
   useEffect(() => {
-    console.log('tweetDrafts', tweetDrafts);
-  }, [tweetDrafts]);
+    const script = document.createElement('script');
+
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.async = true;
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleGenerateTweetModal = (idea: string, example?: string) => {
     setModalContent(idea);
@@ -37,9 +49,23 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   };
 
   const handleEmbedIdeaPopover = (idea: GeneratedIdea) => {
-    console.log('popover button ref', popoverButtonRef);
     popoverButtonRef.current?.click();
     setIdeaObject(idea);
+  };
+
+  const handleBrainstormAction = async () => {
+    try {
+      setIsBrainstorming(true);
+      setTimeout(() => {
+        setShowTooltip(true);
+      }, 1000);
+      await generateTweetDraftsAndIdeas();
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsBrainstorming(false);
+      setShowTooltip(false);
+    }
   };
 
   if (isTweetDraftsLoading) {
@@ -50,7 +76,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
     return (
       <span className='mx-auto w-full text-center'>
         <div className='py-7 flex flex-col sm:flex-row gap-1 justify-center items-center'>
-          <span>⚠️ You must first add your favorite twitter users in </span>
+          <span>⚠️ You must first add trend-setting twitter users to base generated ideas off of in </span>
           <a href='/settings' className='underline'>
             Settings
           </a>
@@ -60,40 +86,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
   }
 
   return (
-    <div className='sm:inline-block mx-auto'>
-      <div className='py-7 flex flex-col items-center'>
-        <div className='flex pb-4 pt-4 items-center justify-center items-center px-3 w-full'>
-          <div className='w-1/6 border-t border-neutral-700'></div>
-          <div className='flex flex-row gap-1  text-neutral-500  px-5 '>
-            {/* <span className='text-xl'>
-              <GiTreeBeehive className='text-xl text-neutral-700' />
-            </span> */}
-
-            <span className='px-3'>
-              Made with{' '}
-              <a href='https://js.langchain.com/docs/' className='hover:underline hover:text-neutral-700'>
-                LangChain
-              </a>
-              ,{' '}
-              <a href='https://pinecone.io' className='hover:underline hover:text-neutral-700'>
-                Pinecone
-              </a>
-              , and{' '}
-              <a href='https://wasp-lang.dev' className='hover:underline hover:text-neutral-700'>
-                {'Wasp = }'}
-              </a>
-            </span>
-
-            <a
-              href='https://github.com/vincanger/banger-tweet-bot'
-              className='flex flex-row justify-center items-center'
-            >
-              <AiOutlineGithub className='text-xl text-neutral-500 hover:text-neutral-700' />
-            </a>
-          </div>
-          <div className='w-1/6 border-t border-neutral-700'></div>
-        </div>
-      </div>
+    <StyleWrapper>
       <div className='flex flex-col sm:flex-row justify-center'>
         {tweetDrafts?.length ? (
           <div className='flex flex-col items-center justify-center gap-4 border border-neutral-700 bg-neutral-100/40 rounded-xl p-1 sm:p-4 w-full md:w-4/5 lg:w-3/4 xl:w-3/5 2xl:w-1/2 '>
@@ -108,7 +101,17 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                     <h2 className='ml-1 mb-3 mt-1 font-bold'>Original Tweet</h2>
                     <div className='flex flex-row gap-4 items-start'>
                       <div className='w-[335px] -mt-3'>
-                        <TwitterTweetEmbed tweetId={tweetDraft.originalTweet.tweetId} placeholder={<Skeleton />} />
+                        <blockquote className='twitter-tweet'>
+                          <p lang='en' dir='ltr'>
+                            {tweetDraft.originalTweet?.content}
+                          </p>
+                          <a
+                            href={`https://twitter.com/${tweetDraft.originalTweet.author.username}/status/${tweetDraft.originalTweet.tweetId}`}
+                          >
+                            {tweetDraft.originalTweet.tweetedAt.toDateString()}
+                          </a>
+                        </blockquote>{' '}
+                        {/* <TwitterTweetEmbed tweetId={tweetDraft.originalTweet.tweetId} placeholder={<Skeleton />} /> */}
                       </div>
                     </div>
                   </div>
@@ -186,11 +189,23 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
             ))}
           </div>
         ) : (
-          <div className='border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-xl text-left w-full'>
+          <div className='border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-xl text-left'>
             <div className='p-2 flex flex-col sm:flex-row gap-1 justify-center items-center w-full'>
-              <span>⚠️ New ideas and drafts are generated every 1 hour.</span>
-              <span>Add some notes to improve the ideas that will be generated for you.</span>
+              <span>⚠️ Nothing has been brainstormed for you yet!</span>
+              <span>Remember to add some notes to improve the ideas that will be generated for you.</span>
             </div>
+            <Tippy
+              delay={500}
+              visible={showTooltip}
+              placement='bottom'
+              content='Brainstorming new ideas can take a few minutes. Please be patient.'
+            >
+              <div className='flex flex-row justify-center items-center m-5'>
+                <PillButton textColor='text-neutral-500' onClick={handleBrainstormAction} isLoading={isBrainstorming}>
+                  🧠 Brainstorm New Tweet Drafts & Ideas
+                </PillButton>
+              </div>
+            </Tippy>
           </div>
         )}
       </div>
@@ -201,7 +216,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
         username={user.username}
         exampleTweet={exampleTweet}
       />
-    </div>
+    </StyleWrapper>
   );
 };
 export default GeneratedIdeasPage;
@@ -238,7 +253,7 @@ export function twitterSvg() {
   );
 }
 
-function EditModal({
+export function EditModal({
   idea,
   isModalOpen,
   setIsModalOpen,

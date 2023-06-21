@@ -123,13 +123,6 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
     /**
      * vector store results for notes similar to the original tweet
      */
-    // const searchRes = await vectorStore.similaritySearch(topicGuide, 2);
-    // searchRes[0].pageContent;
-    // loop through searchRes and concatenate all pageContent into a single string
-    // const notes = searchRes
-    //   .filter((res) => res.pageContent.length >= 3)
-    //   .map((res) => res.pageContent)
-    //   .join(' ');
     const searchRes = await vectorStore.similaritySearchWithScore(topicGuide, 2);
     console.log('searchRes: ', searchRes)
     const notes = searchRes
@@ -140,67 +133,125 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
 
     console.log('\n\nsimilarity search results [][][--0->', notes);
 
-    const tweetLlm = new ChatOpenAI({
+    const ideaLlm = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,
-      temperature: 0.8,
+      temperature: 0.7,
       modelName: 'gpt-3.5-turbo',
     });
 
-    const tweetTemplate = `You are an expert controversial idea generator. You will be given a user's notes, and a style guide. Your goal is to use this information to brainstorm novel ideas. 
+    const newIdeasTemplate = `You are an expert brainstormer. You will be given a user's notes, and a style guide. Your goal is to use this information to brainstorm interesting, sometimes different ideas. 
 
-  Style Guide: {styleGuide}
+    Notes: {topicGuide}. ${notes}
+    
+    Style Guide: {styleGuide}
 
-  Notes: {topicGuide}. ${notes}
+    Ideas Brainstorm: 
+    -`;
 
-  Ideas Brainstorm: 
-  -`;
-
-    const tweetPromptTemplate = new PromptTemplate({
-      template: tweetTemplate,
+    const newIdeasPrompt = new PromptTemplate({
+      template: newIdeasTemplate,
       inputVariables: ['styleGuide', 'topicGuide'],
     });
 
-    const tweetChain = new LLMChain({
-      llm: tweetLlm,
-      prompt: tweetPromptTemplate,
+    const ideaChain = new LLMChain({
+      llm: ideaLlm,
+      prompt: newIdeasPrompt,
       outputKey: 'newTweetIdeas',
     });
 
-    const unhingedTweetTemplate = `You are an expert interesting tweet generator. You will be given some tweet ideas and your goal is to choose one, and write a tweet based on it. Structure the tweet's tone, grammar, and syntax with the help of the style guide. Do not include hashtags in the tweet!
+    const viralIdeaTemplate = `You are an expert tweet generator assistant. You will be given a list of ideas and it is your job to choose the one that is most likely to go viral. Simply reply with the idea you have chosen without editing it or adding your own ideas.
   
-  Tweet Ideas: {newTweetIdeas}
+    Ideas: {newTweetIdeas}
+    
+    Idea most likely to go viral:`;
 
-  Style Guide: ${styleGuide}
-  
-  Controversial Tweet:`;
-
-    const unhingedTweetLlm = new ChatOpenAI({
+    const viralIdeaLlm = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,
-      temperature: 1.1,
-      modelName: 'gpt-3.5-turbo',
+      temperature: 0.4,
+      modelName: 'gpt-3.5-turbo-0613',
     });
 
-    const unhingedTweetPrompt = new PromptTemplate({
-      template: unhingedTweetTemplate,
+    const viralIdeaPropmt = new PromptTemplate({
+      template: viralIdeaTemplate,
       inputVariables: ['newTweetIdeas'],
     });
 
-    const unhingedTweetChain = new LLMChain({
-      llm: unhingedTweetLlm,
-      prompt: unhingedTweetPrompt,
-      outputKey: 'unhingedTweet',
+    const viralIdeaChain = new LLMChain({
+      llm: viralIdeaLlm,
+      prompt: viralIdeaPropmt,
+      outputKey: 'viralIdea',
+    });
+
+    const draftTweetTemplate = `You are an expert tweet generator assistant. You will be given an idea, and you will follow these steps in order to create a tweet from it:
+    1. Do not advertise or announce a product or service. This is not an advertisement!
+    2. Be biased towards presenting ideas and opinions.
+    3. Do not use hashtags.
+    4. Do not use emojis.
+    5. Opinions and hypotheses should have just as much value as facts.
+    6. Do not be afraid to be honest or controversial.
+    7. Do not be afraid to be funny :)
+    8. Do not tell a story about fictional characters or events.
+    
+    Idea: {viralIdea}
+
+    Tweet:`;
+
+    const draftTweetLlm = new ChatOpenAI({
+      openAIApiKey: process.env.OPENAI_API_KEY,
+      temperature: 0.8,
+      modelName: 'gpt-3.5-turbo-0613',
+    });
+
+    const draftTweetPrompt = new PromptTemplate({
+      template: draftTweetTemplate,
+      inputVariables: ['viralIdea'],
+    });
+
+    const draftTweetChain = new LLMChain({
+      llm: draftTweetLlm,
+      prompt: draftTweetPrompt,
+      outputKey: 'tweetDraft',
+    });
+
+    const revisedTweetTemplate = `You are an expert tweet editor. You will be given a tweet, and it is your job to evaluate it and, if necesssary, propose a revision based on these rules:
+    1. The revision should not contain any hashtags or emojis.
+    2. The tweet should not market a product or service. This is not an advertisement!
+    3. The tweet should be written using the style guide as a loose guide for the tone, grammar, and punctuation of the tweet.
+    4. If you think the tweet does not need to be revised, simply reply with the original tweet.
+
+    Style Guide: ${styleGuide}
+
+    Tweet: {tweetDraft}
+
+    Revised Tweet:`;
+
+    const revisedTweetLlm = new ChatOpenAI({
+      openAIApiKey: process.env.OPENAI_API_KEY,
+      temperature: 0.7,
+      modelName: 'gpt-3.5-turbo-0613',
+    });
+    
+    const revisedTweetPrompt = new PromptTemplate({
+      template: revisedTweetTemplate,
+      inputVariables: ['tweetDraft'],
+    });
+
+    const revisedTweetChain = new LLMChain({
+      llm: revisedTweetLlm,
+      prompt: revisedTweetPrompt,
+      outputKey: 'revisedTweet',
     });
 
     const overallChain = new SequentialChain({
-      chains: [tweetChain, unhingedTweetChain],
+      chains: [ideaChain, viralIdeaChain, draftTweetChain, revisedTweetChain],
       inputVariables: ['styleGuide', 'topicGuide', 'exampleTweet'],
-      outputVariables: ['newTweetIdeas', 'unhingedTweet'],
+      outputVariables: ['newTweetIdeas', 'viralIdea', 'tweetDraft', 'revisedTweet'],
       verbose: false,
     });
 
     type ChainDraftResponse = {
       newTweetIdeas: string;
-      unhingedTweet: string;
+      revisedTweet: string;
       notes: string;
     };
 
@@ -208,12 +259,14 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
       styleGuide,
       topicGuide,
       exampleTweet,
-    })) as ChainDraftResponse;
+    })) 
+
+    console.log('RESULT FROM OVERALL CHAIN >> ', res1 )
 
     return {
       ...res1,
       notes,
-    };
+    } as ChainDraftResponse;
   } catch (error:any) {
     throw new Error(error);
   }
@@ -238,7 +291,7 @@ export const generateTweetFromIdea = async ( {idea, prompt, exampleTweet, propos
     let styleTemplate;
 
     if (proposedStyle) {
-      console.log('proposedStyle ]|||||||||}}}} ', proposedStyle);
+      console.log('proposedStyle >>>> ', proposedStyle);
 
       styleTemplate = `You are an expert tweet style suggester. Given a proposed style, extrapolate a style guide for the tone, grammar, and punctuation of a tweet.
 
@@ -264,15 +317,23 @@ export const generateTweetFromIdea = async ( {idea, prompt, exampleTweet, propos
       outputKey: 'styleGuide',
     });
 
-    const tweetTemplate = `You are an expert tweet generator. You will be given an idea, a prompt, and a style guide, and your goal is to write a thought-provoking tweet. Structure the tweet using the tone, grammar, and syntax within the style guide. Do not include hashtags in the tweet!
-  
-  Tweet Idea: ${idea}
+    const tweetTemplate = `You are an expert tweet generator assistant. You will be given an idea, a prompt, and a style guide, and you will follow these steps in order to write a quality tweet:
+    1. Do not write a tweet about a product or service. This is not an advertisement.
+    2. Focus on the idea more than the person.
+    3. Do not use hashtags.
+    4. Do not use emojis.
+    5. Opinions and hypotheses should have just as much value as facts.
+    6. Further follow the instructions within the prompt.
+    7. Use the style guide as a loose guide for the tone, grammar, and punctuation of the tweet.
+    
+    Tweet Idea: ${idea}
 
-  Prompt:${prompt}
+    Prompt:${prompt}
 
-  Style Guide: {styleGuide}
-  
-  Generated Tweet:`;
+    Style Guide: {styleGuide}
+
+    Tweet:`;
+
 
     const tweetLlm = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,

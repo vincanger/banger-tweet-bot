@@ -1,4 +1,3 @@
-import { MdOutlineAutoAwesome } from 'react-icons/md';
 import { HiChevronDown } from 'react-icons/hi';
 import { BsFillPersonVcardFill } from 'react-icons/bs';
 import { AiOutlineInfoCircle } from 'react-icons/ai';
@@ -6,9 +5,11 @@ import { Popover } from '@headlessui/react';
 import useAuth from '@wasp/auth/useAuth';
 import { useEffect, useContext, useRef, useState } from 'react';
 import embedIdea from '@wasp/actions/embedIdea';
+import updateIdea from '@wasp/actions/updateIdea';
 import AppContext from '../Context';
 import { PillButton } from '../GeneratedIdeasPage';
 import Tippy from '@tippyjs/react';
+import Menu from './Menu';
 
 const active = 'inline-flex items-center border-b-2 border-indigo-400 px-1 pt-1 text-sm font-medium text-blue-600';
 const inactive =
@@ -25,10 +26,11 @@ export default function NavBar() {
           <div className='flex justify-between w-full'>
             <div className='flex text-neutral-800'>
               <div className='flex sm:space-x-8'>
-                <a href='/' className={current.includes('ideas') ? active : inactive}>
+                {/* <a href='/' className={current.includes('ideas') ? active : inactive}>
                   <MdOutlineAutoAwesome className='h-6 w-6 mr-2' />
                   <span className='hidden sm:block'>Tweets & Ideas</span>
-                </a>
+                </a> */}
+                <Menu />
               </div>
             </div>
             <div className='w-1/3'></div>
@@ -75,6 +77,12 @@ function EmbedNotePopover() {
       if (!ideaObject) {
         embedIdeaResponse = await embedIdea({
           idea: editedIdea!,
+        });
+      } else if (ideaObject && !ideaObject.originalTweetId) {
+        console.log('updating idea...', ideaObject.id);
+        embedIdeaResponse = await updateIdea({
+          id: ideaObject.id,
+          content: editedIdea!,
         });
       } else {
         embedIdeaResponse = await embedIdea({
@@ -153,7 +161,11 @@ function EmbedNotePopover() {
 
                       <PillButton onClick={handleEmbedIdea} isLoading={isIdeaEmbedding}>
                         <Tippy content='Note Added!' visible={isIdeaSaved} onClickOutside={() => setIsIdeaSaved(false)}>
-                          <span>Embed & Save Idea</span>
+                          {ideaObject && ideaObject.id && !ideaObject.originalTweetId ? (
+                            <span>Embed & Update Idea</span>
+                          ) : (
+                            <span>Embed & Save Idea</span>
+                          )}
                         </Tippy>
                       </PillButton>
                     </div>

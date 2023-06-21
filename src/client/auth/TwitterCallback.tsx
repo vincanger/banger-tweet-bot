@@ -6,7 +6,6 @@ export default () => {
   const params = new URLSearchParams(urlParams);
 
   useEffect(() => {
-    console.log('what is urlParams', urlParams)
     const state = params.get('state');
     const code = params.get('code');
 

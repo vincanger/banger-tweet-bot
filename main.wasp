@@ -24,7 +24,7 @@ app twitterAgent {
     ("openai", "3.2.1"),
     ("gpt-3-encoder", "^1.1.4"),
     ("rettiwt-api", "1.1.8"),
-    ("langchain", "0.0.91"),
+    ("langchain", "0.0.96"),
     ("twitter-api-v2", "1.15.0"),
     ("@pinecone-database/pinecone", "0.1.6"),
     ("@tippyjs/react", "4.2.6"),
@@ -137,6 +137,12 @@ page GeneratedIdeasPage {
   component: import GeneratedIdeas from "@client/GeneratedIdeasPage"
 }
 
+route EmbeddedIdeasRoute { path: "/embedded-ideas", to: EmbeddedIdeasPage }
+page EmbeddedIdeasPage {
+  authRequired: true,
+  component: import EmbeddedIdeas from "@client/EmbeddedIdeasPage"
+}
+
 route SettingsRoute { path: "/settings", to: SettingsPage }
 page SettingsPage {
   authRequired: true,
@@ -148,14 +154,19 @@ page SettingsPage {
 // ????? QUERIES QUERIES QUERIES
 // ?????? QUERIES QUERIES QUERIES
 
-query getGeneratedIdeas {
-  fn: import { getGeneratedIdeas } from "@server/ideas.js",
+query getEmbeddedIdeas {
+  fn: import { getEmbeddedIdeas } from "@server/ideas.js",
   entities: [GeneratedIdea]
 }
 
 query getTweetDraftsWithIdeas {
   fn: import { getTweetDraftsWithIdeas } from "@server/tweets.js",
   entities: [TweetDraft, GeneratedIdea, Tweet]
+}
+
+query fetchSimilarNotes {
+  fn: import { fetchSimilarNotes } from "@server/ideas.js",
+  entities: [GeneratedIdea]
 }
 
 query getAccessTokens {
@@ -176,6 +187,21 @@ action embedIdeas {
 action embedIdea {
   fn: import { embedIdea } from "@server/ideas.js",
   entities: [GeneratedIdea]
+}
+
+action updateIdea {
+  fn: import { updateIdea } from "@server/ideas.js",
+  entities: [GeneratedIdea]
+}
+
+action deleteIdea {
+  fn: import { deleteIdea } from "@server/ideas.js",
+  entities: [GeneratedIdea]
+}
+
+action generateTweetDraftsAndIdeas {
+  fn: import { generateTweetDraftsAndIdeas } from "@server/tweets.js",
+  entities: [Tweet, TweetDraft, GeneratedIdea, User]
 }
 
 action generateTweet {

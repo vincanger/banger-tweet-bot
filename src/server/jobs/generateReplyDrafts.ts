@@ -159,7 +159,7 @@ export default async function generateReplyDraftsJob(args: any, context: Context
 
           const unhingedTweetDraft = await context.entities.TweetDraft.create({
             data: {
-              content: draft.unhingedTweet,
+              content: draft.revisedTweet,
               originalTweetId: originalTweet.id,
               userId: user.id,
               notes: draft.notes,

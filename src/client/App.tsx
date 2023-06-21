@@ -1,5 +1,5 @@
 import './Main.css';
-import { ReactNode, useState, useEffect, useRef } from 'react';
+import { ReactNode, useState, useRef } from 'react';
 import AltNavBar from './components/AltNavBar';
 import AppContext from './Context';
 import useAuth from '@wasp/auth/useAuth';

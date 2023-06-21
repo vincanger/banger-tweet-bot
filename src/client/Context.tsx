@@ -1,4 +1,4 @@
-import { createContext, useRef, RefObject } from 'react';
+import { createContext, RefObject } from 'react';
 import type { GeneratedIdea } from '@wasp/entities';
 
 const AppContext = createContext({
