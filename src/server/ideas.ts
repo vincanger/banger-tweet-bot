@@ -238,7 +238,7 @@ export const fetchSimilarNotes: FetchSimilarNotes<{ query: string }, GeneratedId
   }
 };
 
-export const getEmbeddedIdeas: GetEmbeddedIdeas<unknown, GeneratedIdea[]> = async (_args, context) => {
+export const getEmbeddedIdeas: GetEmbeddedIdeas<never, GeneratedIdea[]> = async (_args, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authorized');
   }

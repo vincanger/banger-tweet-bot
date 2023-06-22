@@ -152,12 +152,12 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                     </Tippy>
                   </div>
 
-                  <div className='flex flex-row gap-1 p-1'>
+                  {tweetDraft.notes.length > 1 && <div className='flex flex-row gap-1 p-1'>
                     <span className='text-neutral-600 font-slim italic'>{tweetDraft.notes}</span>
                     <Tippy content='Note has been embedded and saved to vector DB'>
                       <span>{'🧮'}</span>
                     </Tippy>
-                  </div>
+                  </div>}
                 </div>
 
                 <div className='border-t border-neutral-200 bg-white/70 flex flex-row m-3 ' />

@@ -18,6 +18,8 @@ export const twitterAuth: TwitterAuth<never, string> = async (_args, context) =>
     throw new HttpError(401, 'User is not authenticated');
   }
 
+  console.log('user in first auth fn: ', context.user)
+
   const { url, codeVerifier, state } = twitterClient.generateOAuth2AuthLink(
     callbackUrl,
     { scope: ['users.read', 'tweet.read', 'tweet.write', 'offline.access'] }
@@ -30,8 +32,6 @@ export const twitterAuth: TwitterAuth<never, string> = async (_args, context) =>
       userId: context.user.id,
     },
   });
-
-  console.log('state from generate Auth Link: ', state);
 
   return url;
 };
@@ -57,28 +57,34 @@ export const callback: TwitterAuthCallback<{ state: string; code: string }, { ur
     codeVerifier: tokens.codeVerifier,
     redirectUri: callbackUrl,
   });
+  
+  if (accessToken) {
+    
+     const token = await context.entities.AccessTokens.upsert({
+       where: {
+         userId: tokens.userId,
+       },
+       update: {
+         accessToken,
+         refreshToken,
+         updatedAt: new Date(),
+       },
+       create: {
+         userId: tokens.userId,
+         accessToken,
+         refreshToken,
+       },
+     });
 
-  await context.entities.AccessTokens.upsert({
-    where: {
-      userId: context.user.id,
-    },
-    update: {
-      accessToken,
-      refreshToken,
-      updatedAt: new Date(),
-    },
-    create: {
-      userId: context.user.id,
-      accessToken,
-      refreshToken,
-    },
-  });
+      console.log('token: ', token);
+  }
+  
 
   console.log('MADE IT <><><><><><>');
   return { url: process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000' };
 };
 
-export const getAccessTokens: GetAccessTokens<unknown, AccessTokens | null> = async (_args, context) => {
+export const getAccessTokens: GetAccessTokens<never, AccessTokens | null> = async (_args, context) => {
   if (!context.user) {
     throw new HttpError(401, 'User is not authenticated');
   }

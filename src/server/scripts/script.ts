@@ -12,10 +12,8 @@ export const runChainScript = async (prismaClient: typeof PrismaClient) => {
     entities: {
       GeneratedIdea: prismaClient.generatedIdea,
       Tweet: prismaClient.tweet,
-      AccessTokens: prismaClient.accessTokens,
       TweetDraft: prismaClient.tweetDraft,
       User: prismaClient.user,
-      VerifyTokens: prismaClient.verifyTokens,
       Author: prismaClient.author,
     },
   });
