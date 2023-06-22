@@ -135,7 +135,7 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
 
     const ideaLlm = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,
-      temperature: 0.7,
+      temperature: 0.9,
       modelName: 'gpt-3.5-turbo',
     });
 
