@@ -96,7 +96,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                 id={String(tweetDraft.id)}
                 className={`border border-neutral-500 bg-neutral-100 flex flex-col p-1 sm:p-4 text-neutral-700 rounded-xl text-left w-full`}
               >
-                <div className='flex flex-col justify-center sm:flex-row sm:justify-evenly w-full'>
+                <div className='flex flex-col justify-center lg:flex-row lg:justify-evenly w-full'>
                   <div className='flex flex-col p-1'>
                     <h2 className='ml-1 mb-3 mt-1 font-bold'>Original Tweet</h2>
                     <div className='flex flex-row gap-4 items-start'>
@@ -163,7 +163,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                 <div className='border-t border-neutral-200 bg-white/70 flex flex-row m-3 ' />
                 <div className='flex flex-col w-full p-2 gap-3 items-start text-left'>
                   <div className='flex flex-row justify-start items-center'>
-                    <h2 className='ml-1 font-bold'>Generated Ideas: </h2>
+                    <h2 className='ml-1 font-bold'>Brainstormed Ideas: </h2>
                     <Tippy
                       placement={'top'}
                       content='GPT has brainstormed these ideas for you based on your most similar note(s) above and the original tweet.'

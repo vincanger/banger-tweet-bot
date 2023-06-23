@@ -1,6 +1,7 @@
 import { HiChevronDown } from 'react-icons/hi';
-import { BsFillPersonVcardFill } from 'react-icons/bs';
+import { BsFillPersonVcardFill, BsMagic } from 'react-icons/bs';
 import { AiOutlineInfoCircle } from 'react-icons/ai';
+import { TfiWrite } from 'react-icons/tfi';
 import { Popover } from '@headlessui/react';
 import useAuth from '@wasp/auth/useAuth';
 import { useEffect, useContext, useRef, useState } from 'react';
@@ -9,7 +10,7 @@ import updateIdea from '@wasp/actions/updateIdea';
 import AppContext from '../Context';
 import { PillButton } from '../GeneratedIdeasPage';
 import Tippy from '@tippyjs/react';
-import Menu from './Menu';
+
 
 const active = 'inline-flex items-center border-b-2 border-indigo-400 px-1 pt-1 text-sm font-medium text-blue-600';
 const inactive =
@@ -18,26 +19,31 @@ const current = window.location.pathname;
 
 export default function NavBar() {
   const { data: user } = useAuth();
-
+  useEffect(() => {
+    console.log('current', current);
+  }, []);
   return (
     <nav className='bg-neutral-200 shadow-md sticky top-0 z-50 border-b border-neutral-600 w-full'>
-      <div className='w-full mx-auto px-4 sm:px-12 lg:w-3/5'>
+      <div className='w-full mx-auto px-4 md:px-10 xl:w-3/5'>
         <div className='flex h-16 justify-center'>
           <div className='flex justify-between w-full'>
             <div className='flex text-neutral-800'>
               <div className='flex sm:space-x-8'>
-                {/* <a href='/' className={current.includes('ideas') ? active : inactive}>
-                  <MdOutlineAutoAwesome className='h-6 w-6 mr-2' />
-                  <span className='hidden sm:block'>Tweets & Ideas</span>
-                </a> */}
-                <Menu />
+                <a className={current === '/' ? active : inactive} href='/'>
+                  <BsMagic className='h-4 w-4 mr-1' title='Generated Ideas' />
+                  <span className='hidden md:block'>Generated Ideas</span>
+                </a>
+                <a className={current === '/embedded-ideas' ? active : inactive} href='/embedded-ideas'>
+                  <TfiWrite className='h-4 w-4 mr-1' title='Your Notes' />
+                  <span className='hidden md:block'>Your Notes</span>
+                </a>
               </div>
             </div>
             <div className='w-1/3'></div>
             <div className='ml-6 flex justify-between space-x-2'>
               <a href={!!user ? '/settings' : '/login'} className={current === '/settings' ? active : inactive}>
-                <BsFillPersonVcardFill className='h-6 w-6 mr-2' />
-                <span className='hidden sm:block'>Settings</span>
+                <BsFillPersonVcardFill className='h-5 w-5 mr-2' title='Settings'/>
+                <span className='hidden md:block'>Settings</span>
               </a>
             </div>
           </div>
