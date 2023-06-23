@@ -86,7 +86,7 @@ export default function EmbeddedIdeasPage({ user }: { user: User }) {
               <div className='inline-flex gap-0 w-2/3'>
                 <input
                   type='text'
-                  placeholder='Search'
+                  placeholder='Similarity Search'
                   onChange={(e) => setFetchQuery(e.target.value)}
                   disabled={isFetchingSimilarNotes}
                   className='w-full rounded-l-lg px-2 py-1 border border-neutral-300 border-r-0 text-sm  '
