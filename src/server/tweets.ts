@@ -49,6 +49,8 @@ export const generateTweetDraftsAndIdeas: GenerateTweetDraftsAndIdeas<never, Gen
     // get the logged in user that Wasp passes to the action via the context
     const user = context.user;
 
+    console.log('user', user)
+
     const { newIdeaAmount, newTweetDraftsAmount } = await scrapeTweetsAndGenerate(
       user,
       twitter,

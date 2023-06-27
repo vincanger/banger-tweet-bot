@@ -2,8 +2,6 @@ import './Main.css';
 import {
   useState,
   useContext,
-  lazy,
-  Suspense,
   ChangeEvent,
   ButtonHTMLAttributes,
 } from 'react';
@@ -19,12 +17,8 @@ import 'tippy.js/dist/tippy.css';
 import { Dialog } from '@headlessui/react';
 import { AiOutlineLoading, AiOutlineInfoCircle } from 'react-icons/ai';
 import StyleWrapper from './components/StyleWrapper';
-import LazyLoadComponent from './components/LazyLoad';
 import DraftTweetWrapper from './components/DraftTweetWrapper';
-// import { TwitterTweetEmbed } from 'react-twitter-embed';
-// import Skeleton from './components/Skeleton';
-
-const LazyTweetDraftWithIdeas = lazy(() => import('./components/TweetDraft'));
+import TweetDraft from './components/TweetDraft'
 
 const GeneratedIdeasPage = ({ user }: { user: User }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -75,9 +69,7 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
         {tweetDrafts?.length ? (
           <div className='flex flex-col items-center justify-center gap-4 border border-neutral-700 bg-neutral-100/40 rounded-xl p-1 sm:p-4 w-full md:w-4/5 lg:w-3/4 xl:w-3/5 2xl:w-1/2 '>
             {tweetDrafts.map((tweetDraft) => (
-              <LazyLoadComponent>
-                <Suspense fallback={<div>Loading...</div>}>
-                  <LazyTweetDraftWithIdeas
+                  <TweetDraft
                     key={tweetDraft.content}
                     tweetDraft={tweetDraft}
                     user={user}
@@ -88,8 +80,6 @@ const GeneratedIdeasPage = ({ user }: { user: User }) => {
                     popoverButtonRef={popoverButtonRef}
                     setIdeaObject={setIdeaObject}
                   />
-                </Suspense>
-              </LazyLoadComponent>
             ))}
           </div>
         ) : (

@@ -1,11 +1,15 @@
 import { User, GeneratedIdea } from '@wasp/entities';
 import Tippy from '@tippyjs/react';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { AiOutlineInfoCircle } from 'react-icons/ai';
 import Accordion from './Accordion';
 import DraftTweetWrapper from './DraftTweetWrapper';
+import TweetEmbedWrapper from './TweetEmbedWrapper';
+import LazyLoadComponent from './LazyLoad';
 
-type TweetDraftWithIdeas = {
+const LazyTweetEmbed = lazy(() => import('./TweetEmbedWrapper'));
+
+export type TweetDraftWithIdeas = {
   id: number;
   content: string;
   notes: string;
@@ -54,19 +58,6 @@ export default function TweetDraftWithIdeas({
     setIdeaObject(idea);
   };
 
-  useEffect(() => {
-    const script = document.createElement('script');
-
-    script.src = 'https://platform.twitter.com/widgets.js';
-    script.async = true;
-
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   return (
     <div
       key={tweetDraft.content}
@@ -77,19 +68,10 @@ export default function TweetDraftWithIdeas({
         <div className='flex flex-col p-1'>
           <h2 className='ml-1 mb-3 mt-1 font-bold'>Original Tweet</h2>
           <div className='flex flex-row gap-4 items-start'>
-            <div className='w-[335px] -mt-3'>
-              <blockquote className='twitter-tweet'>
-                <p lang='en' dir='ltr'>
-                  {tweetDraft.originalTweet?.content}
-                </p>
-                <a
-                  href={`https://twitter.com/${tweetDraft.originalTweet.author.username}/status/${tweetDraft.originalTweet.tweetId}`}
-                >
-                  {tweetDraft.originalTweet.tweetedAt.toDateString()}
-                </a>
-              </blockquote>{' '}
-              {/* <TwitterTweetEmbed tweetId={tweetDraft.originalTweet.tweetId} placeholder={<Skeleton />} /> */}
-            </div>
+            <LazyLoadComponent>
+              <Suspense fallback={<div>Loading...</div>}></Suspense>
+              <TweetEmbedWrapper tweetDraft={tweetDraft} />
+            </LazyLoadComponent>
           </div>
         </div>
         <div className='flex flex-col p-1'>

@@ -128,7 +128,7 @@ export const scrapeTweetsAndGenerate = async (
             originalTweetId: originalTweet.id,
           },
         });
-        if (newIdeaAmount) newIdeaAmount++;
+        newIdeaAmount++;
       }
 
       await context.entities.TweetDraft.create({
@@ -140,7 +140,7 @@ export const scrapeTweetsAndGenerate = async (
         },
       });
 
-      if (newTweetDraftsAmount) newTweetDraftsAmount++;
+      newTweetDraftsAmount++;
 
       // create a two second delay to avoid rate limiting
       await new Promise((resolve) => setTimeout(resolve, 1000));
