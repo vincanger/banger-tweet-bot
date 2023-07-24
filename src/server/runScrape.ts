@@ -45,8 +45,8 @@ export const scrapeTweetsAndGenerate = async (
 
     const favUserTweets = await twitter.tweets.getTweets({
       fromUsers: [favUser],
-      // sinceId: mostRecentTweet?.tweetId || undefined, // get tweets since the most recent tweet if it exists
-      endDate: oneDayFromNow, // endDate in format YYYY-MM-DD
+      sinceId: mostRecentTweet?.tweetId || undefined, // get tweets since the most recent tweet if it exists
+      endDate: oneDayFromNow, // not sure if this is right
       links: true,
     });
 

@@ -69,7 +69,7 @@ To use this app:
 6. Run `wasp start`. This will install all dependencies and start the client and server for you :)
 7. Go to `localhost:3000` in your browser (btw your NodeJS server will be running on port `3001`). 
 Create a username (use the same username as your twitter handle) and password via the simple login flow. 
-8. Run `wasp db seed getTwitterTokens` to get your twitter tokens. Copy and paste them into the `env.server` file.
+8. Run `wasp db seed getTwitterTokens` to get your twitter tokens for the [Rettiwt-API](https://github.com/Rishikant181/Rettiwt-API) twitter "fetcher". Copy and paste them into the `env.server` file.
 9. You won't have any data from which to generate new ideas from, so you can:
   a. follow the directions in the `src/server/seeding/embedNotes.ts` file to seed your vector store with some notes and ideas
   b. or add notes and ideas via the UI
