@@ -69,15 +69,17 @@ To use this app:
 6. Run `wasp start`. This will install all dependencies and start the client and server for you :)
 7. Go to `localhost:3000` in your browser (btw your NodeJS server will be running on port `3001`). 
 Create a username (use the same username as your twitter handle) and password via the simple login flow. 
-8. You won't have any data from which to generate new ideas from, so you can:
+8. Run `wasp db seed getTwitterTokens` to get your twitter tokens. Copy and paste them into the `env.server` file.
+9. You won't have any data from which to generate new ideas from, so you can:
   a. follow the directions in the `src/server/seeding/embedNotes.ts` file to seed your vector store with some notes and ideas
   b. or add notes and ideas via the UI
   c. also make sure to add your favorite tweeters via `Settings` tab in the UI
-9. You can wait for the cron job to run as defined in the `main.wasp` config file, or you can run `wasp db seed runChainScript` to run the job manually and populate the DBs.
-10. Run `wasp db studio` if you want to see the data in your Postgres database.
-11. Install the Wasp extension for VSCode to get the best DX
-12. Check the files for comments containing specific instructions
+10. You can uncomment out the cron job in the `main.wasp` file if you want the app to generate new ideas/drafts on a schedule, or you can click the generate button in the ui on demand.
+11. Run `wasp db studio` if you want to see the data in your Postgres database.
+12. Install the Wasp extension for VSCode to get the best DX
+13. Check the files for comments containing specific instructions
 
+if you have any Q's, feel free to reach out to me on twitter https://twitter.com/hot_town
 
 ## TODOs
 

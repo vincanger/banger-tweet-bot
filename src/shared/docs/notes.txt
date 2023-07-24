@@ -1,6 +1,6 @@
 - Add notes you'd like to seed the vector store with here.
-- They will be parsed and embedded via the `wasp db seed embedNotes` command.
+- They will be "parsed" and embedded via the `wasp db seed embedNotes` command.
 - See the `src/server/seeding/embedNotes.ts` file.
-- ...
+- test this { data }
 - I like turtles
 - I think we should work 2 days and fish for 5.

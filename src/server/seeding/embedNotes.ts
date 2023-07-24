@@ -34,12 +34,6 @@ export const initPinecone = async () => {
   return pinecone;
 };
 
-/**
- * NOTE: I was getting parse errors when trying to embed new documents.
- * I played around with the stripNewLines option but that didn't seem to help.
- * In the end, it seems that LangChain parses documents by splitting at punctuation and '\n'
- * so I added punctuation and '\n' to the regex in the embedNotes function below.
- */
 const embeddings = new OpenAIEmbeddings({
   // stripNewLines: false,
   openAIApiKey: process.env.OPENAI_API_KEY,
@@ -78,20 +72,12 @@ export const embedNotes = async (prismaClient: typeof PrismaClient) => {
   file.split('\n').forEach((line) => {
     // remove all dashes that are not directly followed by a letter
     line = line.replace(/-(?![a-zA-Z])/g, '');
-    line = line.replace(/"/g, '');
-    line = line.replace(/{/g, '');
-    line = line.replace(/}/g, '');
     line = line.replace(/^\s*[\r\n]/gm, ''); // TODO: not sure about this one
     line = line.trim();
-    // check if last character is a period and if not add one
-    // if (line[line.length - 1] !== '.') {
-    //   line += '.';
-    // }
-    // check if last character contains punctuation and if not add a period
-    if (line.length > 1 && !line[line.length - 1].match(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g)) {
-      line += '.';
+
+    if (line.length === 0) {
+      return;
     }
-    line += '\n';
 
     const doc = new Document({
       metadata: { type: 'note' },

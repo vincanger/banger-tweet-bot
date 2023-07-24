@@ -11,6 +11,7 @@ app twitterAgent {
     seeds: [
       import { runChainScript } from "@server/scripts/script.js",
       import { embedNotes } from "@server/seeding/embedNotes.js",
+      import { getTwitterTokens } from "@server/scripts/token.js",
     ]
   },
   auth: {
@@ -23,7 +24,7 @@ app twitterAgent {
   dependencies: [
     ("openai", "3.2.1"),
     ("gpt-3-encoder", "^1.1.4"),
-    ("rettiwt-api", "1.1.8"),
+    ("rettiwt-api", "1.4.0"),
     ("langchain", "0.0.96"),
     ("twitter-api-v2", "1.15.0"),
     ("@pinecone-database/pinecone", "0.1.6"),
@@ -234,16 +235,16 @@ action updateSettings {
 // ^^^^^ JOBS JOBS JOBS
 // ^^^^^^ JOBS JOBS JOBS
 
-job replyDraftsJob{
-  executor: PgBoss,
-  perform: {
-    fn: import generateReplyDrafts from "@server/jobs/generateReplyDrafts.js"
-  },
-  entities: [Tweet, TweetDraft, GeneratedIdea, User, Author],
-  schedule: {
-    cron: "0 * * * *", // runs every hour. if it fails, it retries 2 times with 2 minute delay
-    executorOptions: {
-      pgBoss: {=json { "retryLimit": 2, "retryDelay": 120 } json=},
-    }
-  }
-}
+// job replyDraftsJob{
+//   executor: PgBoss,
+//   perform: {
+//     fn: import generateReplyDrafts from "@server/jobs/generateReplyDrafts.js"
+//   },
+//   entities: [Tweet, TweetDraft, GeneratedIdea, User, Author],
+//   schedule: {
+//     cron: "0 7-19 * * *", // runs every hour between 7:00 and 19:00
+//     executorOptions: {
+//       pgBoss: {=json { "retryLimit": 2, "retryDelay": 120 } json=},
+//     }
+//   }
+// }

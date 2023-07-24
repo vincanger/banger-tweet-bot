@@ -1,8 +1,14 @@
 import type { User } from '@wasp/entities';
 import type { Context } from './types';
+import type { Tweet } from 'rettiwt-api'
 import { generateDrafts } from './runChain.js';
 import { Rettiwt } from 'rettiwt-api';
-const twitter = Rettiwt();
+const twitter = Rettiwt({
+  kdt: process.env.KDT!,
+  twid: process.env.TWID!,
+  ct0: process.env.CT0!,
+  auth_token: process.env.AUTH_TOKEN!,
+});
 
 type RettiwtClient = typeof twitter;
 type GenerateDrafts = typeof generateDrafts;
@@ -11,30 +17,69 @@ export const scrapeTweetsAndGenerate = async (
   user: Omit<User, 'password'>,
   twitter: RettiwtClient,
   context: Context,
-  generateDrafts: GenerateDrafts,
+  generateDrafts: GenerateDrafts
 ) => {
-
   let newIdeaAmount = 0;
   let newTweetDraftsAmount = 0;
 
   for (let h = 0; h < user.favUsers.length; h++) {
     const favUser = user.favUsers[h];
+    const oneDayFromNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // convert oneDayFromNow to format YYYY-MM-DD
+
     const userDetails = await twitter.users.getUserDetails(favUser);
-    const favUserTweets = await twitter.users.getUserTweets(userDetails.id);
-    const favUserTweets2 = await twitter.users.getUserTweets(userDetails.id, undefined, favUserTweets.next.value);
-    let favUserTweetTexts = favUserTweets.list.filter((tweet) => !tweet.fullText.startsWith('RT'));
-    favUserTweetTexts = favUserTweetTexts.concat(
-      favUserTweets2.list.filter((tweet) => !tweet.fullText.startsWith('RT'))
-    );
-    favUserTweetTexts = favUserTweetTexts.filter((tweet) => {
-      // keep tweets that were created more than 6 hours ago
-      // createdAt: 'Wed May 24 03:41:53 +0000 2023'
-      const createdAt = new Date(tweet.createdAt);
-      const now = new Date();
-      // const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-      return createdAt > twoDaysAgo;
+
+    // find the most recent tweet from the favUser
+    const mostRecentTweet = await context.entities.Tweet.findFirst({
+      where: {
+        authorId: userDetails.id,
+      },
+      orderBy: {
+        tweetedAt: 'desc',
+      },
     });
+
+    console.log('userDetails: ', userDetails);
+
+    console.log('mostRecentTweet: ', mostRecentTweet);
+
+    const favUserTweets = await twitter.tweets.getTweets({
+      fromUsers: [favUser],
+      // sinceId: mostRecentTweet?.tweetId || undefined, // get tweets since the most recent tweet if it exists
+      endDate: oneDayFromNow, // endDate in format YYYY-MM-DD
+      links: true,
+    });
+
+    console.log('favUserTweets: ', favUserTweets)
+
+    // const favUserTweets = await twitter.users.getUserTweets(userDetails.id);
+    // const favUserTweets2 = await twitter.users.getUserTweets(userDetails.id, undefined, favUserTweets.next.value);
+    // let favUserTweetTexts = favUserTweets.list.filter((tweet) => !tweet.fullText.startsWith('RT'));
+    let favUserTweetTexts: Tweet[] = favUserTweets.list //.filter((tweet) => !tweet.replyTo);
+    const tweetPromises = favUserTweetTexts.map(async (tweet) => {
+      if (!!tweet.quoted || tweet.fullText.startsWith('RT') || tweet.fullText.startsWith('QT')) {
+        const quotedTweet = await twitter.tweets.getTweetDetails(tweet.quoted);
+        tweet.fullText = 'User 1\'s original tweet: ' + quotedTweet.fullText + 'User 2\'s reply: ' + tweet.fullText;
+      } else if (!!tweet.replyTo) {
+        const replyToTweet = await twitter.tweets.getTweetDetails(tweet.replyTo);
+        tweet.fullText = 'User 1\'s original tweet: ' + replyToTweet.fullText + 'User 2\'s reply: ' + tweet.fullText;
+      } else {
+        tweet.fullText = tweet.fullText;
+      }
+      return tweet;
+    });
+    favUserTweetTexts = await Promise.all(tweetPromises);
+
+
+    // favUserTweetTexts = favUserTweetTexts.filter((tweet) => {
+    //   // keep tweets that were created more than 6 hours ago
+    //   // createdAt: 'Wed May 24 03:41:53 +0000 2023'
+    //   const createdAt = new Date(tweet.createdAt);
+    //   const now = new Date();
+    //   // const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+    //   const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    //   return createdAt > twoDaysAgo;
+    // });
 
     const author = await context.entities.Author.upsert({
       where: {
@@ -49,8 +94,8 @@ export const scrapeTweetsAndGenerate = async (
       },
     });
 
-    console.log('\nfavUser', favUser);
-    console.log('\nfavUserTweets', favUserTweetTexts);
+    console.log('\nfavUser: ', favUser);
+    console.log('\nfavUserTweets: ', favUserTweetTexts);
 
     for (let i = 0; i < favUserTweetTexts.length; i++) {
       const tweet = favUserTweetTexts[i];
@@ -68,7 +113,7 @@ export const scrapeTweetsAndGenerate = async (
        * If the tweet already exists in the database, skip generating drafts and ideas for it.
        */
       if (existingTweet) {
-        console.log('tweet already exists in db, skipping generating drafts...');
+        console.log('tweet already exists in db, skipping generating drafts... tweet ID: ', existingTweet.id);
         continue;
       }
 
@@ -151,5 +196,5 @@ export const scrapeTweetsAndGenerate = async (
   return {
     newIdeaAmount,
     newTweetDraftsAmount,
-  }
+  };
 };

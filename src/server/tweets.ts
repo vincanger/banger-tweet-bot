@@ -7,7 +7,12 @@ import { TwitterApi } from 'twitter-api-v2';
 import { generateDrafts } from './runChain.js';
 import { scrapeTweetsAndGenerate } from './runScrape.js';
 import { Rettiwt } from 'rettiwt-api';
-const twitter = Rettiwt();
+const twitter = Rettiwt({
+  kdt: process.env.KDT!,
+  twid: process.env.TWID!,
+  ct0: process.env.CT0!,
+  auth_token: process.env.AUTH_TOKEN!,
+});
 
 const twitterClient = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID!,

@@ -5,6 +5,7 @@ import { PromptTemplate } from 'langchain/prompts';
 import { PineconeStore } from 'langchain/vectorstores/pinecone';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 import { PineconeClient } from '@pinecone-database/pinecone';
+import type { Document } from 'langchain/document'
 export type { Vector } from '@pinecone-database/pinecone';
 
 const pinecone = new PineconeClient();
@@ -123,11 +124,21 @@ export const generateDrafts = async (exampleTweet: string, username: string) => 
     /**
      * vector store results for notes similar to the original tweet
      */
-    const searchRes = await vectorStore.similaritySearchWithScore(topicGuide, 2);
+    let searchRes: [Document<Record<string, any>>, number][] = [];
+    try {
+      const similaritySearchRes = await vectorStore.similaritySearchWithScore(topicGuide, 2);
+      console.log('similaritySearchRes', similaritySearchRes);
+      if (similaritySearchRes.length > 0) {
+        searchRes = similaritySearchRes
+      }
+    } catch (error:any) {
+      console.log('error with similarity search: ', error)
+    }
+
     console.log('searchRes: ', searchRes)
     const notes = searchRes
       .filter(res => res[0].pageContent.length >= 3)
-      .filter(res => res[1] > 0.7)
+      .filter(res => res[1] > 0.8)
       .map(res => res[0].pageContent)
       .join(' ');
 

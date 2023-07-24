@@ -4,7 +4,12 @@ import { generateDrafts } from '../runChain.js';
 import HttpError from '@wasp/core/HttpError.js';
 import { scrapeTweetsAndGenerate } from '../runScrape.js';
 import { Rettiwt } from 'rettiwt-api';
-const twitter = Rettiwt();
+const twitter = Rettiwt({
+  kdt: process.env.KDT!,
+  twid: process.env.TWID!,
+  ct0: process.env.CT0!,
+  auth_token: process.env.AUTH_TOKEN!,
+});
 
 /**
  * This job runs every 1-6 hours and generates drafts and ideas for the users
