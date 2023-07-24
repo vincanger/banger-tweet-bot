@@ -52,34 +52,20 @@ export const scrapeTweetsAndGenerate = async (
 
     console.log('favUserTweets: ', favUserTweets)
 
-    // const favUserTweets = await twitter.users.getUserTweets(userDetails.id);
-    // const favUserTweets2 = await twitter.users.getUserTweets(userDetails.id, undefined, favUserTweets.next.value);
-    // let favUserTweetTexts = favUserTweets.list.filter((tweet) => !tweet.fullText.startsWith('RT'));
     let favUserTweetTexts: Tweet[] = favUserTweets.list //.filter((tweet) => !tweet.replyTo);
     const tweetPromises = favUserTweetTexts.map(async (tweet) => {
       if (!!tweet.quoted || tweet.fullText.startsWith('RT') || tweet.fullText.startsWith('QT')) {
         const quotedTweet = await twitter.tweets.getTweetDetails(tweet.quoted);
-        tweet.fullText = 'User 1\'s original tweet: ' + quotedTweet.fullText + 'User 2\'s reply: ' + tweet.fullText;
+        tweet.fullText = 'User 1\'s original tweet: ' + quotedTweet.fullText + ' User 2\'s reply: ' + tweet.fullText;
       } else if (!!tweet.replyTo) {
         const replyToTweet = await twitter.tweets.getTweetDetails(tweet.replyTo);
-        tweet.fullText = 'User 1\'s original tweet: ' + replyToTweet.fullText + 'User 2\'s reply: ' + tweet.fullText;
+        tweet.fullText = 'User 1\'s original tweet: ' + replyToTweet.fullText + ' User 2\'s reply: ' + tweet.fullText;
       } else {
         tweet.fullText = tweet.fullText;
       }
       return tweet;
     });
     favUserTweetTexts = await Promise.all(tweetPromises);
-
-
-    // favUserTweetTexts = favUserTweetTexts.filter((tweet) => {
-    //   // keep tweets that were created more than 6 hours ago
-    //   // createdAt: 'Wed May 24 03:41:53 +0000 2023'
-    //   const createdAt = new Date(tweet.createdAt);
-    //   const now = new Date();
-    //   // const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-    //   const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-    //   return createdAt > twoDaysAgo;
-    // });
 
     const author = await context.entities.Author.upsert({
       where: {
